@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="MovieTicket.Application/MovieTicket.Application.csproj" />
+  <Project Path="MovieTicket.Domain/MovieTicket.Domain.csproj" />
+  <Project Path="MovieTicket.Infrastructure/MovieTicket.Infrastructure.csproj" />
+  <Project Path="MovieTicket.Presentation/MovieTicket.Presentation.csproj" />
+</Solution>

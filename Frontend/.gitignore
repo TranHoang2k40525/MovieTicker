@@ -1,0 +1,40 @@
+# =========================
+# AppMovieTicker Frontend (Flutter)
+# =========================
+
+# Generic
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Flutter project location
+src/appmovieticker/.dart_tool/
+src/appmovieticker/.flutter-plugins
+src/appmovieticker/.flutter-plugins-dependencies
+src/appmovieticker/.pub-cache/
+src/appmovieticker/.pub/
+src/appmovieticker/build/
+src/appmovieticker/coverage/
+
+# Android
+src/appmovieticker/android/.gradle/
+src/appmovieticker/android/local.properties
+src/appmovieticker/android/app/debug/
+src/appmovieticker/android/app/profile/
+src/appmovieticker/android/app/release/
+
+# iOS / macOS
+src/appmovieticker/ios/Pods/
+src/appmovieticker/ios/.symlinks/
+src/appmovieticker/ios/Flutter/ephemeral/
+src/appmovieticker/macos/Pods/
+src/appmovieticker/macos/Flutter/ephemeral/
+src/appmovieticker/macos/.symlinks/
+
+# Linux / Windows generated build folders
+src/appmovieticker/linux/flutter/ephemeral/
+src/appmovieticker/windows/flutter/ephemeral/

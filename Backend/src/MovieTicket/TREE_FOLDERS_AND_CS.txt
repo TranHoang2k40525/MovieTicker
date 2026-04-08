@@ -1,0 +1,209 @@
+﻿MovieTicket
+|-- MovieTicket.Application
+|   |-- bin
+|   |   |-- Debug
+|   |   |   `-- net9.0
+|   |   `-- Release
+|   |       `-- net9.0
+|   |-- DTOs
+|   |   `-- Auth
+|   |       |-- AuthDtos.cs
+|   |       |-- ChangePasswordRequestDto.cs
+|   |       |-- ForgotPasswordRequestDto.cs
+|   |       |-- LoginDto.cs
+|   |       |-- LoginResponseDto.cs
+|   |       |-- OTPDto.cs
+|   |       |-- RefreshTokenRequestDto.cs
+|   |       |-- RegisterDto.cs
+|   |       `-- ResetPasswordRequestDto.cs
+|   |-- IServices
+|   |   `-- IAuthService .cs
+|   |-- obj
+|   |   |-- Debug
+|   |   |   `-- net9.0
+|   |   |       |-- ref
+|   |   |       |-- refint
+|   |   |       |-- .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+|   |   |       |-- MovieTicket.Application.AssemblyInfo.cs
+|   |   |       `-- MovieTicket.Application.GlobalUsings.g.cs
+|   |   `-- Release
+|   |       `-- net9.0
+|   |           |-- ref
+|   |           |-- refint
+|   |           `-- MovieTicket.Application.GlobalUsings.g.cs
+|   `-- Services
+|       `-- AuthService.cs
+|-- MovieTicket.Domain
+|   |-- bin
+|   |   |-- Debug
+|   |   |   `-- net9.0
+|   |   `-- Release
+|   |       `-- net9.0
+|   |-- Entities
+|   |   |-- Account.cs
+|   |   |-- AccountRole.cs
+|   |   |-- Booking.cs
+|   |   |-- BookingProduct.cs
+|   |   |-- BookingSeat.cs
+|   |   |-- Cinema.cs
+|   |   |-- CinemaHall.cs
+|   |   |-- CinemaHallSeat.cs
+|   |   |-- City.cs
+|   |   |-- LikeMovie.cs
+|   |   |-- LoginHistory.cs
+|   |   |-- Movie.cs
+|   |   |-- Notification.cs
+|   |   |-- Otp.cs
+|   |   |-- Payment.cs
+|   |   |-- Permission.cs
+|   |   |-- Product.cs
+|   |   |-- Rapphimv2Context.cs
+|   |   |-- RefreshToken.cs
+|   |   |-- Role.cs
+|   |   |-- RolePermission.cs
+|   |   |-- Show.cs
+|   |   |-- User.cs
+|   |   |-- Voucher.cs
+|   |   `-- VoucherUsage.cs
+|   |-- IResponsitories
+|   |   `-- IAuth
+|   |       |-- IAccountRepository.cs
+|   |       |-- ILoginHistoryRepository.cs
+|   |       |-- IOtpRepository.cs
+|   |       `-- IRefreshTokenRepository.cs
+|   |-- obj
+|   |   |-- Debug
+|   |   |   `-- net9.0
+|   |   |       |-- ref
+|   |   |       |-- refint
+|   |   |       |-- .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+|   |   |       |-- MovieTicket.Domain.AssemblyInfo.cs
+|   |   |       `-- MovieTicket.Domain.GlobalUsings.g.cs
+|   |   `-- Release
+|   |       `-- net9.0
+|   |           |-- ref
+|   |           |-- refint
+|   |           |-- .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+|   |           |-- MovieTicket.Domain.AssemblyInfo.cs
+|   |           `-- MovieTicket.Domain.GlobalUsings.g.cs
+|   `-- ValueObject
+|       `-- JwtClaim.cs
+|-- MovieTicket.Infrastructure
+|   |-- AppDbContext
+|   |   `-- AppMovieTickerDbContext.cs
+|   |-- bin
+|   |   |-- Debug
+|   |   |   `-- net9.0
+|   |   `-- Release
+|   |       `-- net9.0
+|   |-- Configurations
+|   |   |-- AccountConfiguration.cs
+|   |   |-- AccountRoleConfiguration.cs
+|   |   |-- BookingConfiguration.cs
+|   |   |-- BookingProductConfiguration.cs
+|   |   |-- BookingSeatConfiguration.cs
+|   |   |-- CinemaConfiguration.cs
+|   |   |-- CinemaHallConfiguration.cs
+|   |   |-- CinemaHallSeatConfiguration.cs
+|   |   |-- CityConfiguration.cs
+|   |   |-- LikeMovieConfiguration.cs
+|   |   |-- LoginHistoryConfiguration.cs
+|   |   |-- MovieConfiguration.cs
+|   |   |-- NotificationConfiguration.cs
+|   |   |-- OtpConfiguration.cs
+|   |   |-- PaymentConfiguration.cs
+|   |   |-- PermissionConfiguration.cs
+|   |   |-- ProductConfiguration.cs
+|   |   |-- RefreshTokenConfiguration.cs
+|   |   |-- RoleConfiguration.cs
+|   |   |-- RolePermissionConfiguration.cs
+|   |   |-- ShowConfiguration.cs
+|   |   |-- UserConfiguration.cs
+|   |   |-- VoucherConfiguration.cs
+|   |   `-- VoucherUsageConfiguration.cs
+|   |-- ExternalServices
+|   |-- obj
+|   |   |-- Debug
+|   |   |   `-- net9.0
+|   |   |       |-- ref
+|   |   |       |-- refint
+|   |   |       |-- .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+|   |   |       |-- MovieTicket.Infrastructure.AssemblyInfo.cs
+|   |   |       `-- MovieTicket.Infrastructure.GlobalUsings.g.cs
+|   |   `-- Release
+|   |       `-- net9.0
+|   |           |-- ref
+|   |           |-- refint
+|   |           `-- MovieTicket.Infrastructure.GlobalUsings.g.cs
+|   |-- Repositories
+|   |   `-- AuthRespository
+|   |       |-- AccountRepository.cs
+|   |       |-- LoginHistoryRepository.cs
+|   |       |-- OtpRepository.cs
+|   |       `-- RefreshTokenRepository.cs
+|   `-- Services
+|       |-- Implementations
+|       |   |-- EmailService.cs
+|       |   |-- JwtTokenService.cs
+|       |   |-- OtpService.cs
+|       |   `-- PasswordHashService .cs
+|       `-- IServices
+|           |-- IJwtTokenService.cs
+|           |-- IOtpService.cs
+|           `-- IPasswordHashService.cs
+`-- MovieTicket.Presentation
+    |-- bin
+    |   |-- Debug
+    |   |   `-- net9.0
+    |   |       |-- cs
+    |   |       |-- de
+    |   |       |-- es
+    |   |       |-- fr
+    |   |       |-- it
+    |   |       |-- ja
+    |   |       |-- ko
+    |   |       |-- pl
+    |   |       |-- pt-BR
+    |   |       |-- ru
+    |   |       |-- runtimes
+    |   |       |   |-- unix
+    |   |       |   |   `-- lib
+    |   |       |   |       `-- net6.0
+    |   |       |   |-- win
+    |   |       |   |   `-- lib
+    |   |       |   |       `-- net6.0
+    |   |       |   |-- win-arm
+    |   |       |   |   `-- native
+    |   |       |   |-- win-arm64
+    |   |       |   |   `-- native
+    |   |       |   |-- win-x64
+    |   |       |   |   `-- native
+    |   |       |   `-- win-x86
+    |   |       |       `-- native
+    |   |       |-- tr
+    |   |       |-- zh-Hans
+    |   |       `-- zh-Hant
+    |   `-- Release
+    |       `-- net9.0
+    |-- Controllers
+    |   |-- Auth
+    |   |   `-- AuthController.cs
+    |   `-- AuthController.cs
+    |-- Hub
+    |-- Model
+    |-- obj
+    |   |-- Debug
+    |   |   `-- net9.0
+    |   |       |-- ref
+    |   |       |-- refint
+    |   |       |-- staticwebassets
+    |   |       |-- .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+    |   |       |-- MovieTicket.Presentation.AssemblyInfo.cs
+    |   |       `-- MovieTicket.Presentation.GlobalUsings.g.cs
+    |   `-- Release
+    |       `-- net9.0
+    |           |-- ref
+    |           |-- refint
+    |           `-- MovieTicket.Presentation.GlobalUsings.g.cs
+    |-- Properties
+    `-- Program.cs
