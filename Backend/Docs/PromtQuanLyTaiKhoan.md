@@ -12,7 +12,7 @@ Hay sinh code .NET cho module quan ly tai khoan sao cho giong 100% phong cach hi
 - Controller tra ve anonymous object co dang `success`, `message`, `data` neu can.
 - Tat ca API can co `try/catch`, ghi log bang `ILogger`, va tra ve thong diep tieng Viet ngan gon.
 
-## Cach viet code phai giong code hien co
+## Cach viet code 
 ### Presentation layer
 - Controller dat trong `MovieTicket.Presentation.Controllers.Auth`.
 - Dung `[ApiController]`, `[Route("api/[controller]")]`.
