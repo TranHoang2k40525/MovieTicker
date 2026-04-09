@@ -1,7 +1,7 @@
 # Promt Movie
 
 ## Muc tieu
-Hay sinh code .NET cho phan movie sao cho giong phong cach hien co cua MovieTicket. Phan nay phuc vu API cong khai cho phim dang chieu, sap chieu, phim dac biet, tim phim, lay phim theo ID va phan trang danh sach phim.
+Hay sinh code .NET cho phan movie. Phan nay phuc vu API cong khai cho phim dang chieu, sap chieu, phim dac biet, tim phim, lay phim theo ID va phan trang danh sach phim.
 
 ## Rang buoc bat buoc
 - Khong doi kien truc chung cua du an.
@@ -43,7 +43,7 @@ Hay sinh code .NET cho phan movie sao cho giong phong cach hien co cua MovieTick
 - Tim phim theo ten, so sanh truc tiep theo ten phim.
 - Tra ve DTO khong tra Entity truc tiep.
 
-## Mapping DTO phai giong code hien co
+## Mapping DTO
 ### MovieListDto
 - `MovieId`
 - `MovieTitle`
