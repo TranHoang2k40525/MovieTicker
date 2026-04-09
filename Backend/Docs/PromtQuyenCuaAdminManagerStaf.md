@@ -1,7 +1,7 @@
 # Promt Quyen Cua Admin Manager Staf
 
 ## Muc tieu
-Hay sinh code .NET cho phan quan ly quyen va phan quyen user sao cho giong phong cach cua du an MovieTicket hien co. Phan nay tap trung vao Admin, Manager, Staff, User, quyen truy cap, tao tai khoan nhan vien, khoa/mo khoa tai khoan va xoa tai khoan.
+Hay sinh code .NET cho phan quan ly quyen va phan quyen user. Phan nay tap trung vao Admin, Manager, Staff, User, quyen truy cap, tao tai khoan nhan vien, khoa/mo khoa tai khoan va xoa tai khoan.
 
 ## Rang buoc bat buoc
 - Khong tu y doi canh truc code.
@@ -17,7 +17,7 @@ Hay sinh code .NET cho phan quan ly quyen va phan quyen user sao cho giong phong
 - `Staff`
 - `User`
 
-## Cach code phai giong du an
+
 ### Presentation layer
 - Dung controller trong `MovieTicket.Presentation.Controllers.Auth` cho cac API quan ly quyen tai khoan.
 - API quan trong dang `[Authorize(Roles = "Admin,Manager")]`.
@@ -39,7 +39,7 @@ Hay sinh code .NET cho phan quan ly quyen va phan quyen user sao cho giong phong
 - Khi can lay account, include `Users`, `AccountRoles`, `Role` de phuc vu kiem tra quyen.
 - Khi xoa tai khoan, xu ly refresh token va relation lien quan truoc neu can.
 
-## Rule phan quyen phai theo dung code hien co
+## Rule phan quyen 
 ### Tao employee
 - Admin tao duoc `Manager` va `Staff`.
 - Manager chi tao duoc `Staff`.
