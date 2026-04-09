@@ -39,5 +39,25 @@ namespace MovieTicket.Presentation.Controllers.Cinema
             var result = await _cinemaPubService.GetShowtimesByCinemaAsync(cinemaId, filterDate);
             return Ok(result);
         }
+
+        [HttpPost("movie-showtimes")]
+        public async Task<IActionResult> GetCinemasByMovieSorted([FromBody] MovieLocationRequestDto request, [FromQuery] DateOnly? filterDate)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (request.MovieId <= 0)
+                return BadRequest(new { message = "Invalid Movie ID" });
+
+            var result = await _cinemaPubService.GetCinemasByMovieSortedByDistanceAsync(
+                request.MovieId, 
+                request.Latitude, 
+                request.Longitude, 
+                filterDate);
+
+            return Ok(result);
+        }
     }
 }

@@ -13,4 +13,10 @@ namespace MovieTicket.Application.DTOs.Cinema
         [Range(-180.0, 180.0, ErrorMessage = "Longitude must be between -180 and 180.")]
         public double Longitude { get; set; }
     }
+
+    public class MovieLocationRequestDto : LocationRequestDto
+    {
+        [Required]
+        public int MovieId { get; set; }
+    }
 }

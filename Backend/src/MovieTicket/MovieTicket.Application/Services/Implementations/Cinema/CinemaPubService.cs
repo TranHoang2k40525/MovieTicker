@@ -111,6 +111,66 @@ namespace MovieTicket.Application.Services.Implementations.Cinema
             }
         }
 
+        public async Task<IEnumerable<CinemaListForMovieDto>> GetCinemasByMovieSortedByDistanceAsync(int movieId, double userLat, double userLng, DateOnly? filterDate)
+        {
+            try
+            {
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                var fromDate = filterDate ?? today;
+
+                // Quy tắc: tối đa xem trước 30 ngày
+                var maxDate = today.AddDays(30);
+                var toDate = fromDate;
+
+                if (fromDate > maxDate)
+                {
+                    fromDate = maxDate;
+                    toDate = maxDate;
+                }
+
+                if (fromDate < today)
+                {
+                    fromDate = today;
+                    toDate = today;
+                }
+
+                var shows = await _showtimeRepository.GetShowsByMovieAndDateAsync(movieId, fromDate, toDate);
+
+                // Nhóm theo Rạp
+                var cinemaGroup = shows
+                    .Where(s => s.Hall != null && s.Hall.Cinema != null)
+                    .GroupBy(s => s.Hall!.CinemaId)
+                    .Select(g => new CinemaListForMovieDto
+                    {
+                        CinemaId = g.Key ?? 0,
+                        CinemaName = g.First().Hall?.Cinema?.CinemaName ?? string.Empty,
+                        CityAddress = g.First().Hall?.Cinema?.CityAddress ?? string.Empty,
+                        DistanceInKm = CalculateDistance(userLat, userLng, g.First().Hall?.Cinema?.Latitude ?? 0, g.First().Hall?.Cinema?.Longitude ?? 0),
+                        Showtimes = g.Select(s => new ShowtimeDetailDto
+                        {
+                            ShowId = s.ShowId,
+                            ShowDate = s.ShowDate ?? default,
+                            StartTime = s.ShowTime.HasValue ? s.ShowTime.Value.ToTimeSpan() : TimeSpan.Zero,
+                            EndTime = s.ShowTime.HasValue && s.Movie != null && s.Movie.MovieRuntime.HasValue
+                                ? s.ShowTime.Value.ToTimeSpan().Add(TimeSpan.FromMinutes(s.Movie.MovieRuntime.Value))
+                                : TimeSpan.Zero,
+                            CinemaHallId = s.HallId ?? 0,
+                            HallName = s.Hall?.HallName ?? string.Empty,
+                            ExperienceType = "2D" // Mặc định là 2D
+                        }).ToList()
+                    })
+                    .OrderBy(c => c.DistanceInKm)
+                    .ToList();
+
+                return cinemaGroup;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Đã xảy ra lỗi khi lấy danh sách rạp và lịch chiếu theo Phim có Id: {MovieId}", movieId);
+                return new List<CinemaListForMovieDto>();
+            }
+        }
+
         // Công thức Haversine để tính khoảng cách thực tế trên bản đồ (km)
         private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
         {

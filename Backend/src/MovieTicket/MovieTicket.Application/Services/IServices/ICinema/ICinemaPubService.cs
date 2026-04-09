@@ -9,5 +9,6 @@ namespace MovieTicket.Application.Services.IServices.ICinema
     {
         Task<IEnumerable<NearbyCinemaDto>> GetCinemasSortedByDistanceAsync(double userLat, double userLng);
         Task<IEnumerable<CinemaShowtimeDto>> GetShowtimesByCinemaAsync(int cinemaId, DateOnly? filterDate);
+        Task<IEnumerable<CinemaListForMovieDto>> GetCinemasByMovieSortedByDistanceAsync(int movieId, double userLat, double userLng, DateOnly? filterDate);
     }
 }

@@ -8,5 +8,6 @@ namespace MovieTicket.Domain.IResponsitories.ICinema
     public interface ICinemaShowtimeRepository
     {
         Task<IEnumerable<Show>> GetShowsByCinemaAndDateAsync(int cinemaId, DateOnly fromDate, DateOnly toDate);
+        Task<IEnumerable<Show>> GetShowsByMovieAndDateAsync(int movieId, DateOnly fromDate, DateOnly toDate);
     }
 }
