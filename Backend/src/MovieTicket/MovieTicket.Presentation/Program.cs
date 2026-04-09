@@ -12,13 +12,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using DotNetEnv;
+using Serilog;
 
 // Load .env file
 Env.Load();
 
-var builder = WebApplication.CreateBuilder(args);
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/MovieTicketLog-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
-// Override configuration with environment variables
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+    builder.Host.UseSerilog();
+
+    // Override configuration with environment variables
 var config = builder.Configuration;
 config.AddEnvironmentVariables();
 
@@ -58,6 +68,13 @@ builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<MovieTicket.Application.IServices.IUserService, MovieTicket.Application.Services.UserService>();
+
+builder.Services.AddScoped<MovieTicket.Domain.IReponsitories.IMovie.IMovieRepository, MovieTicket.Infrastructure.Repositories.MovieRespository.MovieRepository>();
+builder.Services.AddScoped<MovieTicket.Application.Services.IServices.IMovie.IMoviePubService, MovieTicket.Application.Services.Implementations.Movie.MoviePubService>();
+
+builder.Services.AddScoped<MovieTicket.Domain.IResponsitories.ICinema.ICinemaRepository, MovieTicket.Infrastructure.Repositories.CinemaRepository.CinemaRepository>();
+builder.Services.AddScoped<MovieTicket.Domain.IResponsitories.ICinema.ICinemaShowtimeRepository, MovieTicket.Infrastructure.Repositories.CinemaRepository.CinemaShowtimeRepository>();
+builder.Services.AddScoped<MovieTicket.Application.Services.IServices.ICinema.ICinemaPubService, MovieTicket.Application.Services.Implementations.Cinema.CinemaPubService>();
 
 // Background Tasks
 builder.Services.AddHostedService<AccountCleanupService>();
@@ -187,3 +204,12 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
