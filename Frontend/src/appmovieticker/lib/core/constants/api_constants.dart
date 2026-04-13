@@ -26,6 +26,7 @@ class ApiConstants {
   static const String movieSpecial = '/MoviePub/special';
   static const String movieShowingAndUpcoming = '/MoviePub/showing-and-upcoming';
   static const String movieSearch = '/MoviePub/search';
+  static const String movieDetail = '/MoviePub';
   static const String cinemaNearby = '/CinemaPub/nearby';
 }
 

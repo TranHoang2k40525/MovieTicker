@@ -1,14 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
-import '../../../auth/presentation/pages/login_page.dart';
-import '../../../auth/presentation/pages/register_page.dart';
-import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/movie_list_item.dart';
 import 'nearby_cinemas_page.dart';
+import 'movie_detail_page.dart';
+import '../widgets/movie_menu_dialog.dart';
 
 enum _MovieTab { nowShowing, special, upcoming }
 
@@ -32,6 +31,8 @@ class _MoviesPageState extends State<MoviesPage> {
   List<MovieListItem> _upcoming = const [];
   List<MovieListItem> _combined = const [];
   int _visibleCombinedCount = _batchSize;
+  bool _tabPrefetchScheduled = false;
+  bool _combinedPrefetchScheduled = false;
   final Map<_MovieTab, int> _visibleCount = {
     _MovieTab.nowShowing: _batchSize,
     _MovieTab.special: _batchSize,
@@ -123,22 +124,41 @@ class _MoviesPageState extends State<MoviesPage> {
 
     // Trigger preload when reaching 2 items before the end of current visible batch
     // E.g. batch 1: show 0-4, trigger at index 3; batch 2: show 0-9, trigger at index 8, etc.
-    if (index >= currentVisible - 2 && currentVisible < total) {
-      final nextVisible = (currentVisible + _batchSize).clamp(0, total);
-      setState(() {
-        _visibleCount[_selectedTab] = nextVisible;
+    if (index >= currentVisible - 2 && currentVisible < total && !_tabPrefetchScheduled) {
+      _tabPrefetchScheduled = true;
+      final tab = _selectedTab;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _tabPrefetchScheduled = false;
+        if (!mounted) return;
+        final visible = _visibleCount[tab] ?? _batchSize;
+        final tabTotal = switch (tab) {
+          _MovieTab.nowShowing => _nowShowing.length,
+          _MovieTab.special => _special.length,
+          _MovieTab.upcoming => _upcoming.length,
+        };
+        if (visible >= tabTotal) return;
+        final nextVisible = (visible + _batchSize).clamp(0, tabTotal);
+        setState(() {
+          _visibleCount[tab] = nextVisible;
+        });
       });
     }
   }
 
   void _prefetchCombinedIfNeeded(int index) {
     final total = _combined.length;
-    
+
     // Preload when reaching index 3, 8, 13, etc. (every batch of 5, trigger 2 items before end)
-    if (index >= _visibleCombinedCount - 2 && _visibleCombinedCount < total) {
-      final nextVisible = (_visibleCombinedCount + _batchSize).clamp(0, total);
-      setState(() {
-        _visibleCombinedCount = nextVisible;
+    if (index >= _visibleCombinedCount - 2 && _visibleCombinedCount < total && !_combinedPrefetchScheduled) {
+      _combinedPrefetchScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _combinedPrefetchScheduled = false;
+        if (!mounted) return;
+        if (_visibleCombinedCount >= _combined.length) return;
+        final nextVisible = (_visibleCombinedCount + _batchSize).clamp(0, _combined.length);
+        setState(() {
+          _visibleCombinedCount = nextVisible;
+        });
       });
     }
   }
@@ -209,190 +229,9 @@ class _MoviesPageState extends State<MoviesPage> {
   }
 
   Future<void> _openMenu() async {
-    final scale = _uiScale(context);
-    final screenSize = MediaQuery.sizeOf(context);
-    final menuWidth = screenSize.width * 0.7;
-    final local = di.sl<AuthLocalDataSource>();
-    final token = await local.getToken();
-    final profile = await local.getUserProfile();
-    if (!mounted) return;
-
-    final isLoggedIn = token != null && token.isNotEmpty;
-    final displayName = (profile?['fullName']?.toString().trim().isNotEmpty ?? false)
-        ? profile!['fullName'].toString().trim()
-        : 'Thành viên 67CS';
-    final memberId = profile?['id']?.toString() ?? '000001';
-    final avatarUrl = (profile?['avatarUrl'] ?? profile?['avatar'] ?? profile?['imageUrl'])?.toString().trim();
-    final hasAvatarUrl = avatarUrl != null && avatarUrl.isNotEmpty;
-    final safeAvatarUrl = avatarUrl ?? '';
-    const guestAvatar = 'assets/images/avatramacdinh.png';
-    const memberFallbackAvatar = 'assets/images/—Pngtree—coming soon movie in cinema_1157635.png';
-    final fallbackAvatar = isLoggedIn ? memberFallbackAvatar : guestAvatar;
-
-    await showGeneralDialog<void>(
-      context: context,
-      barrierLabel: 'menu',
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
-      pageBuilder: (dialogContext, animation, secondaryAnimation) {
-        return Align(
-          alignment: Alignment.topRight,
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: menuWidth,
-              padding: EdgeInsets.fromLTRB(12 * scale, 28 * scale, 12 * scale, 12 * scale),
-              decoration: BoxDecoration(
-                color: const Color(0xB3000000),
-                borderRadius: BorderRadius.circular(22 * scale),
-                border: Border.all(color: const Color(0x66FFFFFF)),
-              ),
-              child: Column(
-                children: [
-                  // Avatar
-                  SizedBox(
-                    width: 70 * scale,
-                    height: 70 * scale,
-                    child: ClipOval(
-                      child: hasAvatarUrl
-                          ? Image.network(
-                              safeAvatarUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (ctx, err, st) => Image.asset(fallbackAvatar, fit: BoxFit.cover),
-                            )
-                          : Image.asset(fallbackAvatar, fit: BoxFit.cover),
-                    ),
-                  ),
-                  SizedBox(height: 8 * scale),
-                  // User info or login buttons
-                  if (isLoggedIn) ...[
-                    Text(
-                      displayName,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white, fontSize: 15 * scale, fontWeight: FontWeight.w700),
-                    ),
-                    SizedBox(height: 8 * scale),
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 6 * scale),
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          top: BorderSide(color: Color(0x55FFFFFF)),
-                          bottom: BorderSide(color: Color(0x55FFFFFF)),
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Text('ID : $memberId', style: TextStyle(color: Colors.white, fontSize: 14 * scale, fontWeight: FontWeight.w700)),
-                          SizedBox(height: 6 * scale),
-                          Text('Tổng chi tiêu 2026 0 đ', style: TextStyle(color: const Color(0xFFFFD460), fontSize: 11 * scale, fontWeight: FontWeight.w500)),
-                        ],
-                      ),
-                    ),
-                  ] else ...[
-                    Text('Đăng nhập / Đăng ký', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 16 * scale, fontWeight: FontWeight.w700)),
-                    SizedBox(height: 10 * scale),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MenuTextButton(
-                            label: 'Đăng nhập',
-                            scale: scale,
-                            onTap: () {
-                              Navigator.of(dialogContext).pop();
-                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginPage()));
-                            },
-                          ),
-                        ),
-                        SizedBox(width: 8 * scale),
-                        Expanded(
-                          child: _MenuTextButton(
-                            label: 'Đăng ký',
-                            scale: scale,
-                            onTap: () {
-                              Navigator.of(dialogContext).pop();
-                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterPage()));
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                  SizedBox(height: 10 * scale),
-                  // Book buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _MenuTextButton(label: 'Đặt vé theo phim', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
-                      ),
-                      Container(width: 1, height: 20 * scale, color: const Color(0x55FFFFFF)),
-                      Expanded(
-                        child: _MenuTextButton(
-                          label: 'Đặt vé theo rạp',
-                          scale: scale,
-                          onTap: () {
-                            Navigator.of(dialogContext).pop();
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyCinemasPage()));
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 12 * scale),
-                  // Menu grid
-                  Expanded(
-                    child: GridView.count(
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 3,
-                      mainAxisSpacing: 10 * scale,
-                      crossAxisSpacing: 8 * scale,
-                      childAspectRatio: 0.88,
-                      children: [
-                        _MenuIconItem(icon: Icons.home_outlined, label: 'Trang chủ', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
-                        _MenuIconItem(
-                          icon: Icons.person_outline,
-                          label: 'Thành viên',
-                          scale: scale,
-                          onTap: () {
-                            Navigator.of(dialogContext).pop();
-                            if (!isLoggedIn) Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginPage()));
-                          },
-                        ),
-                        _MenuIconItem(
-                          icon: Icons.info_outline,
-                          label: 'Rạp',
-                          scale: scale,
-                          onTap: () {
-                            Navigator.of(dialogContext).pop();
-                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NearbyCinemasPage()));
-                          },
-                        ),
-                        _MenuIconItem(icon: Icons.card_giftcard_outlined, label: 'Ưu đãi', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
-                        _MenuIconItem(icon: Icons.confirmation_num_outlined, label: 'Vé của tôi', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
-                        _MenuIconItem(icon: Icons.redeem_outlined, label: 'Đổi ưu đãi', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
-                        _MenuIconItem(icon: Icons.store_outlined, label: 'Store', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
-                        const SizedBox.shrink(),
-                        const SizedBox.shrink(),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 8 * scale),
-                  // Logout button
-                  if (isLoggedIn)
-                    _MenuTextButton(
-                      label: 'Đăng xuất',
-                      scale: scale,
-                      onTap: () async {
-                        await local.clearToken();
-                        if (context.mounted) Navigator.of(dialogContext).pop();
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    await showMovieMenuDialog(
+      context,
+      scale: _uiScale(context),
     );
   }
 }
@@ -595,7 +434,12 @@ class _MovieContent extends StatelessWidget {
             separatorBuilder: (context, index) => SizedBox(width: 10 * scale),
             itemBuilder: (context, index) {
               onPosterVisible(index);
-              return _PosterOnly(scale: scale, movie: tabMovies[index]);
+              return GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => MovieDetailPage(movie: tabMovies[index])),
+                ),
+                child: _PosterOnly(scale: scale, movie: tabMovies[index]),
+              );
             },
           ),
         ),
@@ -653,78 +497,83 @@ class _MovieDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(10 * scale, 8 * scale, 10 * scale, 10 * scale),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFDDDDDD))),
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => MovieDetailPage(movie: movie)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 98 * scale,
-            height: 138 * scale,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16 * scale),
-              child: _NetworkPoster(movie: movie),
+      child: Container(
+        padding: EdgeInsets.fromLTRB(10 * scale, 8 * scale, 10 * scale, 10 * scale),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0xFFDDDDDD))),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 98 * scale,
+              height: 138 * scale,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16 * scale),
+                child: _NetworkPoster(movie: movie),
+              ),
             ),
-          ),
-          SizedBox(width: 10 * scale),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  movie.movieTitle.toUpperCase(),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 18 * scale, fontWeight: FontWeight.w800),
-                ),
-                SizedBox(height: 2 * scale),
-                Text(
-                  'Đạo diễn: ${movie.movieActor.isNotEmpty ? movie.movieActor : 'Dang cap nhat'}',
-                  style: TextStyle(fontSize: 12 * scale, height: 1.3),
-                ),
-                Text(
-                  'Thể loại: ${movie.movieGenre.isNotEmpty ? movie.movieGenre : 'Dang cap nhat'}',
-                  style: TextStyle(fontSize: 12 * scale, height: 1.3),
-                ),
-                Text(
-                  'Khởi chiếu: ${_formatDate(movie.movieReleaseDate)}',
-                  style: TextStyle(fontSize: 12 * scale, height: 1.3),
-                ),
-                Text(
-                  'Thời lượng: ${movie.movieRuntime ?? 0} phút',
-                  style: TextStyle(fontSize: 12 * scale, height: 1.3),
-                ),
-                Text(
-                  'Phụ đề ${movie.movieLanguage.isNotEmpty ? movie.movieLanguage : 'Tieng Viet'}',
-                  style: TextStyle(fontSize: 12 * scale, height: 1.3),
-                ),
-                SizedBox(height: 8 * scale),
-                Center(
-                  child: Container(
-                    width: 156 * scale,
-                    height: 34 * scale,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4766C),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Đặt vé',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16 * scale,
-                        fontWeight: FontWeight.w600,
+            SizedBox(width: 10 * scale),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    movie.movieTitle.toUpperCase(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 18 * scale, fontWeight: FontWeight.w800),
+                  ),
+                  SizedBox(height: 2 * scale),
+                  Text(
+                    'Đạo diễn: ${movie.movieActor.isNotEmpty ? movie.movieActor : 'Dang cap nhat'}',
+                    style: TextStyle(fontSize: 12 * scale, height: 1.3),
+                  ),
+                  Text(
+                    'Thể loại: ${movie.movieGenre.isNotEmpty ? movie.movieGenre : 'Dang cap nhat'}',
+                    style: TextStyle(fontSize: 12 * scale, height: 1.3),
+                  ),
+                  Text(
+                    'Khởi chiếu: ${_formatDate(movie.movieReleaseDate)}',
+                    style: TextStyle(fontSize: 12 * scale, height: 1.3),
+                  ),
+                  Text(
+                    'Thời lượng: ${movie.movieRuntime ?? 0} phút',
+                    style: TextStyle(fontSize: 12 * scale, height: 1.3),
+                  ),
+                  Text(
+                    'Phụ đề ${movie.movieLanguage.isNotEmpty ? movie.movieLanguage : 'Tieng Viet'}',
+                    style: TextStyle(fontSize: 12 * scale, height: 1.3),
+                  ),
+                  SizedBox(height: 8 * scale),
+                  Center(
+                    child: Container(
+                      width: 156 * scale,
+                      height: 34 * scale,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4766C),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Đặt vé',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16 * scale,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -797,82 +646,6 @@ class _ErrorView extends StatelessWidget {
             FilledButton(
               onPressed: onRetry,
               child: const Text('Thu lai'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MenuTextButton extends StatelessWidget {
-  const _MenuTextButton({
-    required this.label,
-    required this.scale,
-    required this.onTap,
-  });
-
-  final String label;
-  final double scale;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12 * scale),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 5 * scale, horizontal: 6 * scale),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 15 * scale,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MenuIconItem extends StatelessWidget {
-  const _MenuIconItem({
-    required this.icon,
-    required this.label,
-    required this.scale,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final double scale;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8 * scale),
-      child: SizedBox(
-        width: 70 * scale,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 44 * scale,
-              height: 44 * scale,
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xCFFFFFFF), width: 1),
-                borderRadius: BorderRadius.circular(8 * scale),
-              ),
-              child: Icon(icon, color: Colors.white, size: 28 * scale),
-            ),
-            SizedBox(height: 5 * scale),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 11 * scale),
             ),
           ],
         ),

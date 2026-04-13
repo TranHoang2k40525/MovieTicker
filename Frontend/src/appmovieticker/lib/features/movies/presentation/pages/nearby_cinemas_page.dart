@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../../../../core/di/injection_container.dart' as di;
-import '../../../../core/widgets/liquid_glass_background.dart';
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/nearby_cinema_item.dart';
+import '../widgets/movie_menu_dialog.dart';
 
 class NearbyCinemasPage extends StatefulWidget {
   const NearbyCinemasPage({super.key});
@@ -90,84 +90,109 @@ class _NearbyCinemasPageState extends State<NearbyCinemasPage> {
 
   @override
   Widget build(BuildContext context) {
+    final scale = _uiScale(context);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rap gan ban'),
-      ),
-      body: LiquidGlassBackground(
-        child: RefreshIndicator(
-          onRefresh: _loadNearbyCinemas,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            children: [
-              _GeoBanner(onRefresh: _loadNearbyCinemas),
-              const SizedBox(height: 16),
-              if (_loading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 24),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (_message != null)
-                _EmptyState(message: _message!, onRetry: _loadNearbyCinemas)
-              else
-                ..._cinemas.map((cinema) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _CinemaCard(cinema: cinema),
-                    )),
-            ],
+      backgroundColor: const Color(0xFFF6F6F6),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(8 * scale, 6 * scale, 8 * scale, 8 * scale),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28 * scale),
+              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
+            ),
+            child: Column(
+              children: [
+                _Header(scale: scale, onMenuTap: () => showMovieMenuDialog(context, scale: scale)),
+                Container(height: 54 * scale, color: const Color(0xFFE8D66C), alignment: Alignment.centerLeft, padding: EdgeInsets.symmetric(horizontal: 14 * scale), child: Text('GỢI Ý CHO BẠN', style: TextStyle(fontSize: 13 * scale, fontStyle: FontStyle.italic, fontWeight: FontWeight.w700))),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadNearbyCinemas,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      children: [
+                        if (_loading)
+                          Padding(
+                            padding: EdgeInsets.only(top: 30 * scale),
+                            child: const Center(child: CircularProgressIndicator()),
+                          )
+                        else if (_message != null)
+                          _EmptyState(message: _message!, onRetry: _loadNearbyCinemas)
+                        else ...[
+                          ..._cinemas.map(
+                            (cinema) => _CinemaRow(
+                              cinema: cinema,
+                              scale: scale,
+                            ),
+                          ),
+                          SizedBox(height: 70 * scale),
+                          Container(height: 54 * scale, color: const Color(0xFFE8D66C)),
+                          Container(
+                            decoration: const BoxDecoration(
+                              border: Border(bottom: BorderSide(color: Color(0xFFE6C94E))),
+                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 18 * scale, vertical: 14 * scale),
+                            child: Row(
+                              children: [
+                                Text('Hà Nội', style: TextStyle(fontSize: 13 * scale, fontStyle: FontStyle.italic, fontWeight: FontWeight.w700)),
+                                const Spacer(),
+                                Text('${_cinemas.length}', style: TextStyle(fontSize: 13 * scale, fontWeight: FontWeight.w700)),
+                                SizedBox(width: 8 * scale),
+                                Icon(Icons.keyboard_arrow_down_rounded, size: 22 * scale),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+
+  double _uiScale(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    if (size.shortestSide < 700) {
+      return (size.width / 390).clamp(0.75, 0.95);
+    }
+    return (size.width / 1200).clamp(0.9, 1.25);
+  }
 }
 
-class _GeoBanner extends StatelessWidget {
-  const _GeoBanner({required this.onRefresh});
+class _Header extends StatelessWidget {
+  const _Header({required this.scale, required this.onMenuTap});
 
-  final VoidCallback onRefresh;
+  final double scale;
+  final VoidCallback onMenuTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F4F5),
-        borderRadius: BorderRadius.circular(24),
-      ),
+    return SizedBox(
+      height: 54 * scale,
       child: Row(
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(Icons.location_on_outlined, size: 28),
+          IconButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: Icon(Icons.arrow_back, size: 24 * scale, color: const Color(0xFFE14A4A)),
           ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Rap gan ban',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Cap quyen vi tri de xep rap theo khoang cach thuc te.',
-                  style: TextStyle(color: Color(0xFF475569)),
-                ),
-              ],
-            ),
+          Text(
+            'Rạp phim',
+            style: TextStyle(fontSize: 16 * scale, fontWeight: FontWeight.w700, fontStyle: FontStyle.italic),
           ),
-          const SizedBox(width: 10),
-          FilledButton(
-            onPressed: onRefresh,
-            child: const Text('Tai lai'),
+          const Spacer(),
+          Icon(Icons.send_outlined, size: 22 * scale, color: const Color(0xFFD0BFA3)),
+          SizedBox(width: 14 * scale),
+          IconButton(
+            onPressed: onMenuTap,
+            icon: Icon(Icons.menu_rounded, size: 34 * scale, color: const Color(0xFFE14A4A)),
           ),
         ],
       ),
@@ -175,86 +200,32 @@ class _GeoBanner extends StatelessWidget {
   }
 }
 
-class _CinemaCard extends StatelessWidget {
-  const _CinemaCard({required this.cinema});
+class _CinemaRow extends StatelessWidget {
+  const _CinemaRow({required this.cinema, required this.scale});
 
   final NearbyCinemaItem cinema;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFE4C85C))),
       ),
+      padding: EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 16 * scale),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(Icons.theaters_outlined, size: 28),
-          ),
-          const SizedBox(width: 14),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  cinema.cinemaName,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  cinema.cityAddress,
-                  style: const TextStyle(color: Color(0xFF475569)),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _DistanceChip(label: '${cinema.distanceInKm.toStringAsFixed(1)} km'),
-                    _DistanceChip(label: 'ID ${cinema.cinemaId}'),
-                  ],
-                ),
-              ],
+            child: Text(
+              cinema.cinemaName,
+              style: TextStyle(fontSize: 13 * scale, fontStyle: FontStyle.italic, fontWeight: FontWeight.w600),
             ),
+          ),
+          Text(
+            '${cinema.distanceInKm.toStringAsFixed(1)}Km',
+            style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w700, color: const Color(0xFFFF3B30)),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _DistanceChip extends StatelessWidget {
-  const _DistanceChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
       ),
     );
   }

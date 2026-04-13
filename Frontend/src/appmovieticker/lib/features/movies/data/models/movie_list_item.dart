@@ -9,6 +9,9 @@ class MovieListItem {
     this.movieReleaseDate,
     this.movieRuntime,
     required this.movieActor,
+    this.videoUrl,
+    this.movieDescription,
+    this.movieType,
   });
 
   final int movieId;
@@ -20,6 +23,9 @@ class MovieListItem {
   final String movieGenre;
   final String movieActor;
   final String movieLanguage;
+  final String? videoUrl;
+  final String? movieDescription;
+  final String? movieType;
 
   factory MovieListItem.fromJson(Map<String, dynamic> json) {
     return MovieListItem(
@@ -32,6 +38,13 @@ class MovieListItem {
       movieGenre: _readString(json['movieGenre'] ?? json['MovieGenre']),
       movieActor: _readString(json['movieActor'] ?? json['MovieActor']),
       movieLanguage: _readString(json['movieLanguage'] ?? json['MovieLanguage']),
+      videoUrl: _readNullableString(json['videoUrl'] ?? json['VideoUrl']),
+      movieDescription: _readNullableString(
+        json['movieDescription'] ?? json['MovieDescription'] ?? json['description'] ?? json['Description'],
+      ),
+      movieType: _readNullableString(
+        json['movieType'] ?? json['MovieType'] ?? json['type'] ?? json['Type'],
+      ),
     );
   }
 
@@ -58,6 +71,12 @@ class MovieListItem {
 
   static String _readString(dynamic value) {
     return value?.toString() ?? '';
+  }
+
+  static String? _readNullableString(dynamic value) {
+    if (value == null) return null;
+    final str = value.toString().trim();
+    return str.isEmpty ? null : str;
   }
 
   static DateTime? _readDate(dynamic value) {

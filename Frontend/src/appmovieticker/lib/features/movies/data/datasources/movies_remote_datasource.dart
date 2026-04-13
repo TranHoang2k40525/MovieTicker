@@ -9,6 +9,7 @@ abstract class MoviesRemoteDataSource {
   Future<List<MovieListItem>> getSpecialMovies();
   Future<List<MovieListItem>> getShowingAndUpcomingMovies({int page, int sizePage});
   Future<List<NearbyCinemaItem>> getNearbyCinemas({required double latitude, required double longitude});
+  Future<MovieListItem> getMovieDetail({required int movieId});
 }
 
 class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
@@ -49,6 +50,23 @@ class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
     );
 
     return _parseList(response.data, NearbyCinemaItem.fromJson);
+  }
+
+  @override
+  Future<MovieListItem> getMovieDetail({required int movieId}) async {
+    final response = await dioClient.dio.get('${ApiConstants.movieDetail}/$movieId');
+
+    final data = response.data;
+    if (data is Map<String, dynamic>) {
+      return MovieListItem.fromJson(data);
+    }
+
+    final list = _parseList(data, MovieListItem.fromJson);
+    if (list.isNotEmpty) {
+      return list.first;
+    }
+
+    throw Exception('Khong tim thay chi tiet phim #$movieId');
   }
 
   Future<List<MovieListItem>> _fetchMovieList(String path) async {
