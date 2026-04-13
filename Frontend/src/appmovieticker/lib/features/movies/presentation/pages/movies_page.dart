@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/di/injection_container.dart' as di;
@@ -43,6 +44,39 @@ class _MoviesPageState extends State<MoviesPage> {
   void initState() {
     super.initState();
     _loadMovies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _promptEnableLocationIfNeeded();
+    });
+  }
+
+  Future<void> _promptEnableLocationIfNeeded() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (serviceEnabled || !mounted) return;
+
+    final shouldOpenSettings = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Bật định vị'),
+          content: const Text('Ứng dụng cần bật định vị để tìm rạp gần bạn. Hãy bật định vị trong cài đặt thiết bị.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Bỏ qua'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Mở cài đặt'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldOpenSettings == true) {
+      await Geolocator.openLocationSettings();
+    }
   }
 
   bool _isMobileLayout(BuildContext context) {

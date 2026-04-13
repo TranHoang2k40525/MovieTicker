@@ -43,6 +43,8 @@ dependencies:
     pinput: ^6.0.2
     font_awesome_flutter: ^10.8.0
     geolocator: ^14.0.2
+    url_launcher: ^6.3.0
+    webview_flutter: ^4.12.0
 
 dev_dependencies:
     flutter_test:

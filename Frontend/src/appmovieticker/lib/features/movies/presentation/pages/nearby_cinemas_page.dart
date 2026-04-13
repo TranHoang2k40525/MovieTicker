@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/nearby_cinema_item.dart';
+import 'cinema_detail_page.dart';
 import '../widgets/movie_menu_dialog.dart';
 
 class NearbyCinemasPage extends StatefulWidget {
@@ -19,6 +20,7 @@ class _NearbyCinemasPageState extends State<NearbyCinemasPage> {
   bool _loading = false;
   String? _message;
   List<NearbyCinemaItem> _cinemas = const [];
+  int? _expandedGroupIndex;
 
   @override
   void initState() {
@@ -34,6 +36,14 @@ class _NearbyCinemasPageState extends State<NearbyCinemasPage> {
 
     try {
       final position = await _resolvePosition();
+      if (position == null) {
+        if (!mounted) return;
+        setState(() {
+          _message = 'Vi tri: N/A';
+          _cinemas = const [];
+        });
+        return;
+      }
       final cinemas = await _remoteDataSource.getNearbyCinemas(
         latitude: position.latitude,
         longitude: position.longitude,
@@ -64,10 +74,10 @@ class _NearbyCinemasPageState extends State<NearbyCinemasPage> {
     }
   }
 
-  Future<Position> _resolvePosition() async {
+  Future<Position?> _resolvePosition() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      throw const LocationPermissionException('Hay bat dich vu vi tri tren thiet bi cua ban.');
+      return null;
     }
 
     var permission = await Geolocator.checkPermission();
@@ -76,11 +86,11 @@ class _NearbyCinemasPageState extends State<NearbyCinemasPage> {
     }
 
     if (permission == LocationPermission.denied) {
-      throw const LocationPermissionException('Quyen vi tri bi tu choi. Hay cap quyen de xem rap gan ban.');
+      return null;
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw const LocationPermissionException('Quyen vi tri bi chan vinh vien. Hay mo lai trong cai dat he thong.');
+      return null;
     }
 
     return Geolocator.getCurrentPosition(
@@ -122,7 +132,7 @@ class _NearbyCinemasPageState extends State<NearbyCinemasPage> {
                         else if (_message != null)
                           _EmptyState(message: _message!, onRetry: _loadNearbyCinemas)
                         else ...[
-                          ..._cinemas.map(
+                          ..._cinemas.take(2).map(
                             (cinema) => _CinemaRow(
                               cinema: cinema,
                               scale: scale,
@@ -130,21 +140,7 @@ class _NearbyCinemasPageState extends State<NearbyCinemasPage> {
                           ),
                           SizedBox(height: 70 * scale),
                           Container(height: 54 * scale, color: const Color(0xFFE8D66C)),
-                          Container(
-                            decoration: const BoxDecoration(
-                              border: Border(bottom: BorderSide(color: Color(0xFFE6C94E))),
-                            ),
-                            padding: EdgeInsets.symmetric(horizontal: 18 * scale, vertical: 14 * scale),
-                            child: Row(
-                              children: [
-                                Text('Hà Nội', style: TextStyle(fontSize: 13 * scale, fontStyle: FontStyle.italic, fontWeight: FontWeight.w700)),
-                                const Spacer(),
-                                Text('${_cinemas.length}', style: TextStyle(fontSize: 13 * scale, fontWeight: FontWeight.w700)),
-                                SizedBox(width: 8 * scale),
-                                Icon(Icons.keyboard_arrow_down_rounded, size: 22 * scale),
-                              ],
-                            ),
-                          ),
+                          ..._buildCityGroups(scale),
                         ],
                       ],
                     ),
@@ -164,6 +160,42 @@ class _NearbyCinemasPageState extends State<NearbyCinemasPage> {
       return (size.width / 390).clamp(0.75, 0.95);
     }
     return (size.width / 1200).clamp(0.9, 1.25);
+  }
+
+  List<Widget> _buildCityGroups(double scale) {
+    final grouped = <String, List<NearbyCinemaItem>>{};
+    for (final cinema in _cinemas) {
+      final city = _extractCityName(cinema.cityAddress);
+      grouped.putIfAbsent(city, () => []).add(cinema);
+    }
+
+    final entries = grouped.entries.toList();
+    return List<Widget>.generate(entries.length, (index) {
+      final entry = entries[index];
+      final expanded = _expandedGroupIndex == index;
+      return _CityGroupTile(
+        title: entry.key,
+        count: entry.value.length,
+        scale: scale,
+        expanded: expanded,
+        cinemas: entry.value,
+        onToggle: () {
+          setState(() {
+            _expandedGroupIndex = expanded ? null : index;
+          });
+        },
+      );
+    });
+  }
+
+  String _extractCityName(String cityAddress) {
+    final parts = cityAddress
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return 'Hà Nội';
+    return parts.first;
   }
 }
 
@@ -208,24 +240,31 @@ class _CinemaRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE4C85C))),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 16 * scale),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              cinema.cinemaName,
-              style: TextStyle(fontSize: 13 * scale, fontStyle: FontStyle.italic, fontWeight: FontWeight.w600),
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => CinemaDetailPage(cinema: cinema)),
+        );
+      },
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0xFFE4C85C))),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 16 * scale),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                cinema.cinemaName,
+                style: TextStyle(fontSize: 13 * scale, fontStyle: FontStyle.italic, fontWeight: FontWeight.w600),
+              ),
             ),
-          ),
-          Text(
-            '${cinema.distanceInKm.toStringAsFixed(1)}Km',
-            style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w700, color: const Color(0xFFFF3B30)),
-          ),
-        ],
+            Text(
+              '${cinema.distanceInKm.toStringAsFixed(1)}Km',
+              style: TextStyle(fontSize: 12 * scale, fontWeight: FontWeight.w700, color: const Color(0xFFFF3B30)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -262,4 +301,106 @@ class LocationPermissionException implements Exception {
   const LocationPermissionException(this.message);
 
   final String message;
+}
+
+class _CityGroupTile extends StatelessWidget {
+  const _CityGroupTile({
+    required this.title,
+    required this.count,
+    required this.scale,
+    required this.expanded,
+    required this.cinemas,
+    required this.onToggle,
+  });
+
+  final String title;
+  final int count;
+  final double scale;
+  final bool expanded;
+  final List<NearbyCinemaItem> cinemas;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFE6C94E))),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: onToggle,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 18 * scale, vertical: 14 * scale),
+              child: Row(
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13 * scale,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '$count',
+                    style: TextStyle(fontSize: 13 * scale, fontWeight: FontWeight.w700),
+                  ),
+                  SizedBox(width: 8 * scale),
+                  AnimatedRotation(
+                    turns: expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 180),
+                    child: Icon(Icons.keyboard_arrow_down_rounded, size: 22 * scale),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (expanded)
+            Container(
+              color: const Color(0xFFFDF7D9),
+              constraints: BoxConstraints(maxHeight: 180 * scale),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const ClampingScrollPhysics(),
+                itemCount: cinemas.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFEFD97D)),
+                itemBuilder: (context, index) {
+                  final cinema = cinemas[index];
+                  return InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => CinemaDetailPage(cinema: cinema)),
+                      );
+                    },
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16 * scale, vertical: 12 * scale),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              cinema.cinemaName,
+                              style: TextStyle(fontSize: 12 * scale, fontStyle: FontStyle.italic),
+                            ),
+                          ),
+                          Text(
+                            '${cinema.distanceInKm.toStringAsFixed(1)}Km',
+                            style: TextStyle(
+                              fontSize: 11 * scale,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFFFF3B30),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
