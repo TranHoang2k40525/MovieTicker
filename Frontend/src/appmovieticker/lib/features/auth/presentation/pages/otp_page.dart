@@ -28,7 +28,7 @@ class _OtpPageState extends State<OtpPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lï¿½ng nh?p d? 6 ch? s?')),
+        const SnackBar(content: Text('Vui lòng nh?p d? 6 ch? s?')),
       );
     }
   }
@@ -60,7 +60,7 @@ class _OtpPageState extends State<OtpPage> {
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
         title: const Text(
-          'Xac thuc OTP',
+          'Xác th?c OTP',
           style: TextStyle(color: Colors.black87),
         ),
         backgroundColor: Colors.transparent,
@@ -73,7 +73,7 @@ class _OtpPageState extends State<OtpPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                  'Xac Thuc Otp thanh cong, vui long dang nhap lai.',
+                  'Xác th?c OTP thành công, vui lòng dang nh?p l?i.',
                 ),
               ),
             );
@@ -87,9 +87,8 @@ class _OtpPageState extends State<OtpPage> {
               ),
             );
           } else if (state is AuthFailure) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(state.message)));
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(state.message)));
           }
         },
         child: Padding(
@@ -104,12 +103,12 @@ class _OtpPageState extends State<OtpPage> {
               ),
               const SizedBox(height: 24),
               const Text(
-                'Mï¿½ xï¿½c th?c dï¿½ du?c g?i',
+                'Mã xác th?c dã du?c g?i',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
-                'Vui lï¿½ng ki?m tra email: ',
+                'Vui lòng ki?m tra email: ',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
@@ -139,7 +138,7 @@ class _OtpPageState extends State<OtpPage> {
                         ),
                       ),
                       child: const Text(
-                        'Xï¿½c nh?n',
+                        'Xác nh?n',
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     );
@@ -153,3 +152,4 @@ class _OtpPageState extends State<OtpPage> {
     );
   }
 }
+
