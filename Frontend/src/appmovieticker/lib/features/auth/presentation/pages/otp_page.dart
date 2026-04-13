@@ -8,7 +8,8 @@ import 'login_page.dart';
 
 class OtpPage extends StatefulWidget {
   final String email;
-  const OtpPage({super.key, required this.email});
+  final String password;
+  const OtpPage({super.key, required this.email, required this.password});
 
   @override
   State<OtpPage> createState() => _OtpPageState();
@@ -76,7 +77,12 @@ class _OtpPageState extends State<OtpPage> {
             );
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const LoginPage()),
+              MaterialPageRoute(
+                builder: (_) => LoginPage(
+                  prefilledEmail: widget.email,
+                  prefilledPassword: widget.password,
+                ),
+              ),
             );
           } else if (state is AuthFailure) {
             ScaffoldMessenger.of(context)
