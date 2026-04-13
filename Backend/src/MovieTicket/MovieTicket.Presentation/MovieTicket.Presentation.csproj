@@ -32,7 +32,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.5" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.5" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
-    <PackageReference Include="DotNetEnv" Version="3.0.1" />
+    <PackageReference Include="DotNetEnv" Version="3.1.0" />
   </ItemGroup>
 
   <ItemGroup>
