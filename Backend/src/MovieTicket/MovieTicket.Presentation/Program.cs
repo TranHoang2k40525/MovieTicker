@@ -1,7 +1,9 @@
 using MovieTicket.Infrastructure.AppDbContext;
 using MovieTicket.Application.IServices;
 using MovieTicket.Application.Services;
-using MovieTicket.Infrastructure.Repositories;
+using MovieTicket.Domain.IReponsitories.IMovie;
+using MovieTicket.Infrastructure.Repositories.CinemaRepository;
+using MovieTicket.Infrastructure.Repositories.MovieRespository;
 using MovieTicket.Infrastructure.Repositories.AuthRespository;
 using MovieTicket.Infrastructure.Services.IServices;
 using MovieTicket.Infrastructure.Services.Implementations;
@@ -12,13 +14,28 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using DotNetEnv;
+using Serilog;
+using MovieTicket.Application.Services.Implementations.Movie;
+using MovieTicket.Application.Services.IServices.IMovie;
+using MovieTicket.Domain.IResponsitories.ICinema;
+using MovieTicket.Application.Services.Implementations.Cinema;
+using MovieTicket.Application.Services.IServices.ICinema;
 
 // Load .env file
 Env.Load();
 
-var builder = WebApplication.CreateBuilder(args);
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/MovieTicketLog-.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 
-// Override configuration with environment variables
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+    builder.Host.UseSerilog();
+
+    // Override configuration with environment variables
 var config = builder.Configuration;
 config.AddEnvironmentVariables();
 
@@ -57,7 +74,14 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<MovieTicket.Application.IServices.IUserService, MovieTicket.Application.Services.UserService>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.AddScoped<IMovieRepository,MovieRepository>();
+builder.Services.AddScoped<IMoviePubService, MoviePubService>();
+
+builder.Services.AddScoped<ICinemaRepository, CinemaRepository>();
+builder.Services.AddScoped<ICinemaShowtimeRepository, CinemaShowtimeRepository>();
+builder.Services.AddScoped<ICinemaPubService, CinemaPubService>();
 
 // Background Tasks
 builder.Services.AddHostedService<AccountCleanupService>();
@@ -187,3 +211,12 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
