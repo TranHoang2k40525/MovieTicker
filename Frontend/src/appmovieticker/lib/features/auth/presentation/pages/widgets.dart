@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 const Color _primaryColor = Color(0xFFE53935);
 
@@ -63,7 +63,7 @@ class CinemaHeader extends StatelessWidget {
                   ),
                 ),
                 const Text(
-                  'Đăng kí',
+                  'Đăng ký',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 15,

@@ -1,4 +1,4 @@
-import 'dart:convert';
+Ôªøimport 'dart:convert';
 import 'package:dio/dio.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -57,26 +57,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       } else if (raw is String) {
         data = jsonDecode(raw) as Map<String, dynamic>;
       } else {
-        throw ServerException('–?nh d?ng ph?n h?i khÙng h?p l?');
+        throw ServerException('√ê?nh d?ng ph?n h?i kh√¥ng h?p l?');
       }
 
       if (data['success'] == false) {
-        throw ServerException(data['message'] ?? '–ang k˝ th?t b?i');
+        throw ServerException(data['message'] ?? '√êang k√Ω th?t b?i');
       }
     } on DioException catch (e) {
       final dynamic err = e.response?.data;
       String message;
       if (err is Map<String, dynamic>) {
-        message = err['message']?.toString() ?? '–ang k˝ th?t b?i';
+        message = err['message']?.toString() ?? '√êang k√Ω th?t b?i';
       } else if (err is String) {
         try {
           final json = jsonDecode(err) as Map<String, dynamic>;
-          message = json['message']?.toString() ?? '–ang k˝ th?t b?i';
+          message = json['message']?.toString() ?? '√êang k√Ω th?t b?i';
         } catch (_) {
-          message = e.message ?? '–ang k˝ th?t b?i';
+          message = e.message ?? '√êang k√Ω th?t b?i';
         }
       } else {
-        message = e.message ?? '–ang k˝ th?t b?i';
+        message = e.message ?? '√êang k√Ω th?t b?i';
       }
 
       throw ServerException(message);
@@ -101,7 +101,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       } else if (raw is String) {
         data = jsonDecode(raw) as Map<String, dynamic>;
       } else {
-        throw ServerException('–?nh d?ng ph?n h?i khÙng h?p l?');
+        throw ServerException('√ê?nh d?ng ph?n h?i kh√¥ng h?p l?');
       }
 
       if (data['success'] == true) {
@@ -109,25 +109,25 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         if (inner is Map<String, dynamic>) {
           return inner;
         } else {
-          throw ServerException('–?nh d?ng d? li?u dang nh?p khÙng h?p l?');
+          throw ServerException('√ê?nh d?ng d? li?u dang nh?p kh√¥ng h?p l?');
         }
       } else {
-        throw ServerException(data['message'] ?? '–ang nh?p th?t b?i');
+        throw ServerException(data['message'] ?? '√êang nh?p th?t b?i');
       }
     } on DioException catch (e) {
       final dynamic err = e.response?.data;
       String message;
       if (err is Map<String, dynamic>) {
-        message = err['message']?.toString() ?? '–ang nh?p th?t b?i';
+        message = err['message']?.toString() ?? '√êang nh?p th?t b?i';
       } else if (err is String) {
         try {
           final json = jsonDecode(err) as Map<String, dynamic>;
-          message = json['message']?.toString() ?? '–ang nh?p th?t b?i';
+          message = json['message']?.toString() ?? '√êang nh?p th?t b?i';
         } catch (_) {
-          message = e.message ?? '–ang nh?p th?t b?i';
+          message = e.message ?? '√êang nh?p th?t b?i';
         }
       } else {
-        message = e.message ?? '–ang nh?p th?t b?i';
+        message = e.message ?? '√êang nh?p th?t b?i';
       }
 
       throw ServerException(message);
@@ -149,26 +149,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       } else if (raw is String) {
         data = jsonDecode(raw) as Map<String, dynamic>;
       } else {
-        throw ServerException('–?nh d?ng ph?n h?i khÙng h?p l?');
+        throw ServerException('√ê?nh d?ng ph?n h?i kh√¥ng h?p l?');
       }
 
       if (data['success'] == false) {
-        throw ServerException(data['message'] ?? 'X·c th?c m„ OTP th?t b?i');
+        throw ServerException(data['message'] ?? 'X√°c th?c m√£ OTP th?t b?i');
       }
     } on DioException catch (e) {
       final dynamic err = e.response?.data;
       String message;
       if (err is Map<String, dynamic>) {
-        message = err['message']?.toString() ?? 'L?i k?t n?i x·c th?c OTP';
+        message = err['message']?.toString() ?? 'L?i k?t n?i x√°c th?c OTP';
       } else if (err is String) {
         try {
           final json = jsonDecode(err) as Map<String, dynamic>;
-          message = json['message']?.toString() ?? 'L?i k?t n?i x·c th?c OTP';
+          message = json['message']?.toString() ?? 'L?i k?t n?i x√°c th?c OTP';
         } catch (_) {
-          message = e.message ?? 'L?i k?t n?i x·c th?c OTP';
+          message = e.message ?? 'L?i k?t n?i x√°c th?c OTP';
         }
       } else {
-        message = e.message ?? 'L?i k?t n?i x·c th?c OTP';
+        message = e.message ?? 'L?i k?t n?i x√°c th?c OTP';
       }
 
       throw ServerException(message);

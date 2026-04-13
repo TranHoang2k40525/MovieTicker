@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pinput/pinput.dart';
 import '../bloc/auth_bloc.dart';
@@ -28,7 +28,7 @@ class _OtpPageState extends State<OtpPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui l�ng nh?p d? 6 ch? s?')),
+        const SnackBar(content: Text('Vui lòng nhập đủ 6 chữ số OTP')),
       );
     }
   }
@@ -60,7 +60,7 @@ class _OtpPageState extends State<OtpPage> {
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
         title: const Text(
-          'X�c th?c OTP',
+          'Xác thực OTP',
           style: TextStyle(color: Colors.black87),
         ),
         backgroundColor: Colors.transparent,
@@ -73,7 +73,7 @@ class _OtpPageState extends State<OtpPage> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                  'X�c th?c OTP th�nh c�ng, vui l�ng dang nh?p l?i.',
+                  'Xác thực OTP thành công, vui lòng đăng nhập.',
                 ),
               ),
             );
@@ -104,12 +104,12 @@ class _OtpPageState extends State<OtpPage> {
               ),
               const SizedBox(height: 24),
               const Text(
-                'M� x�c th?c d� du?c g?i',
+                'Mã xác thực đã được gửi',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
-                'Vui l�ng ki?m tra email: ',
+                'Vui lòng kiểm tra email: ${widget.email}',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
@@ -139,7 +139,7 @@ class _OtpPageState extends State<OtpPage> {
                         ),
                       ),
                       child: const Text(
-                        'X�c nh?n',
+                        'Xác nhận',
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     );

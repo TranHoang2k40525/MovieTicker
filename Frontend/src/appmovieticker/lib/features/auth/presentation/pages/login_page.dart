@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import 'widgets.dart';
 import 'register_page.dart';
-import '../../movies/presentation/pages/movies_page.dart';
+import '../../../movies/presentation/pages/movies_page.dart';
 
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
@@ -38,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _handleLogin() {
     if (_emailCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) {
-      _showSnack('Vui l�ng nh?p d?y d? th�ng tin');
+      _showSnack('Vui lòng nhập đầy đủ thông tin');
       return;
     }
 
@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          _showSnack(state.message);
+          _showSnack('Đăng nhập thành công!');
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const MoviesPage()),
           );
@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 16),
                         RoundedTextField(
                           controller: _passwordCtrl,
-                          label: 'M?t kh?u',
+                          label: 'Mật khẩu',
                           obscure: _obscure,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 24),
                         PrimaryButton(
-                          text: '�ang nh?p',
+                          text: 'Đăng nhập',
                           onPressed: _handleLogin,
                           loading: loading,
                         ),
@@ -112,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                         TextButton(
                           onPressed: () {},
                           child: const Text(
-                            'Qu�n m?t kh?u?',
+                            'Quên mật khẩu?',
                             style: TextStyle(color: Colors.grey),
                           ),
                         ),
@@ -123,7 +123,7 @@ class _LoginPageState extends State<LoginPage> {
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 8.0),
                               child: Text(
-                                'ho?c',
+                                'hoặc',
                                 style: TextStyle(color: Colors.grey),
                               ),
                             ),
@@ -148,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                               );
                             },
                             child: const Text(
-                              '�ang k� t�i kho?n 67CS',
+                              'Đăng ký tài khoản 67CS',
                               style: TextStyle(
                                 color: Colors.black87,
                                 fontWeight: FontWeight.w500,
@@ -168,4 +168,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-

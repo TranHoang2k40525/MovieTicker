@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -45,16 +45,16 @@ class _RegisterPageState extends State<RegisterPage> {
         _birthDate == null ||
         _gender == null ||
         _area == null) {
-      _showSnack('Vui l�ng nh?p d?y d? th�ng tin');
+      _showSnack('Vui lòng nhập đầy đủ thông tin');
       return;
     }
     if (_passwordCtrl.text != _confirmPasswordCtrl.text) {
-      _showSnack('M?t kh?u nh?p l?i kh�ng kh?p');
+      _showSnack('Mật khẩu nhập lại không khớp');
       return;
     }
 
     final dateOnlyString =
-        '--';
+        '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}';
 
     context.read<AuthBloc>().add(
       SignUpRequested(
@@ -78,7 +78,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
-          _showSnack(state.message);
+          _showSnack('Đăng ký thành công, vui lòng nhập OTP để xác thực');
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => OtpPage(
@@ -111,12 +111,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         const SizedBox(height: 8),
                         RoundedTextField(
                           controller: _nameCtrl,
-                          label: 'H? v� t�n *',
+                          label: 'Họ và tên *',
                         ),
                         const SizedBox(height: 12),
                         RoundedTextField(
                           controller: _phoneCtrl,
-                          label: 'S? di?n tho?i *',
+                          label: 'Số điện thoại *',
                           keyboardType: TextInputType.phone,
                         ),
                         const SizedBox(height: 12),
@@ -128,7 +128,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         const SizedBox(height: 12),
                         RoundedTextField(
                           controller: _passwordCtrl,
-                          label: 'M?t kh?u *',
+                          label: 'Mật khẩu *',
                           obscure: _obscurePassword,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -144,7 +144,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         const SizedBox(height: 12),
                         RoundedTextField(
                           controller: _confirmPasswordCtrl,
-                          label: 'Nh?p l?i m?t kh?u *',
+                          label: 'Nhập lại mật khẩu *',
                           obscure: _obscureConfirm,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -166,7 +166,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text('Ng�y sinh'),
+                                    const Text('Ngày sinh'),
                                     const SizedBox(height: 4),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -185,8 +185,8 @@ class _RegisterPageState extends State<RegisterPage> {
                                         children: [
                                           Text(
                                             _birthDate == null
-                                                ? 'Ch?n ng�y sinh'
-                                                : '//',
+                                                ? 'Chọn ngày sinh'
+                                                : '${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year}',
                                             style: TextStyle(
                                               color: _birthDate == null
                                                   ? Colors.grey
@@ -206,40 +206,19 @@ class _RegisterPageState extends State<RegisterPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Gi?i t�nh'),
+                                  const Text('Giới tính'),
                                   const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                    decoration: const BoxDecoration(
-                                      border: Border(
-                                        bottom: BorderSide(color: Colors.grey),
-                                      ),
-                                    ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: _gender,
-                                        hint: const Text('Ch?n'),
-                                        isExpanded: true,
-                                        items: const [
-                                          DropdownMenuItem(
-                                            value: 'Nam',
-                                            child: Text('Nam'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'N?',
-                                            child: Text('N?'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'Kh�c',
-                                            child: Text('Kh�c'),
-                                          ),
-                                        ],
-                                        onChanged: (v) =>
-                                            setState(() => _gender = v),
-                                      ),
-                                    ),
+                                  DropdownButtonFormField<String>(
+                                    value: _gender,
+                                    isExpanded: true,
+                                    hint: const Text('Chọn giới tính'),
+                                    items: ['Nam', 'Nữ', 'Khác'].map((g) {
+                                      return DropdownMenuItem(
+                                        value: g,
+                                        child: Text(g),
+                                      );
+                                    }).toList(),
+                                    onChanged: (v) => setState(() => _gender = v),
                                   ),
                                 ],
                               ),
@@ -250,47 +229,25 @@ class _RegisterPageState extends State<RegisterPage> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Khu v?c'),
+                            const Text('Tỉnh, thành phố'),
                             const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: const BoxDecoration(
-                                border: Border(
-                                  bottom: BorderSide(color: Colors.grey),
-                                ),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: _area,
-                                  hint: const Text('Ch?n khu v?c'),
-                                  isExpanded: true,
-                                  items: const [
-                                    DropdownMenuItem(
-                                      value: 'TP. HCM',
-                                      child: Text('TP. HCM'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'H� N?i',
-                                      child: Text('H� N?i'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'C?n Tho',
-                                      child: Text('C?n Tho'),
-                                    ),
-                                    DropdownMenuItem(
-                                      value: 'Kh�c',
-                                      child: Text('Kh�c'),
-                                    ),
-                                  ],
-                                  onChanged: (v) => setState(() => _area = v),
-                                ),
-                              ),
+                            DropdownButtonFormField<String>(
+                              value: _area,
+                              isExpanded: true,
+                              hint: const Text('Chọn Khu vực'),
+                              items: ['Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Khác'].map((a) {
+                                return DropdownMenuItem(
+                                  value: a,
+                                  child: Text(a),
+                                );
+                              }).toList(),
+                              onChanged: (v) => setState(() => _area = v),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
                         PrimaryButton(
-                          text: '�ang k�',
+                          text: 'Hoàn tất',
                           onPressed: _handleRegister,
                           loading: loading,
                         ),
@@ -306,4 +263,3 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 }
-
