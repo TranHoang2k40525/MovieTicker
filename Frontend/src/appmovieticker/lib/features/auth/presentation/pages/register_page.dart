@@ -209,7 +209,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   const Text('Giới tính'),
                                   const SizedBox(height: 4),
                                   DropdownButtonFormField<String>(
-                                    value: _gender,
+                                    initialValue: _gender,
                                     isExpanded: true,
                                     hint: const Text('Chọn giới tính'),
                                     items: ['Nam', 'Nữ', 'Khác'].map((g) {
@@ -232,7 +232,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             const Text('Tỉnh, thành phố'),
                             const SizedBox(height: 4),
                             DropdownButtonFormField<String>(
-                              value: _area,
+                              initialValue: _area,
                               isExpanded: true,
                               hint: const Text('Chọn Khu vực'),
                               items: ['Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Khác'].map((a) {

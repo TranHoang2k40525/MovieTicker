@@ -48,6 +48,8 @@ namespace MovieTicket.Infrastructure.AppDbContext
 
         public virtual DbSet<RolePermission> RolePermissions { get; set; }
 
+        public virtual DbSet<RoomLayout> RoomLayouts { get; set; }
+
         public virtual DbSet<Show> Shows { get; set; }
 
         public virtual DbSet<User> Users { get; set; }
@@ -78,6 +80,7 @@ namespace MovieTicket.Infrastructure.AppDbContext
             modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
             modelBuilder.ApplyConfiguration(new RoleConfiguration());
             modelBuilder.ApplyConfiguration(new RolePermissionConfiguration());
+            modelBuilder.ApplyConfiguration(new RoomLayoutConfiguration());
             modelBuilder.ApplyConfiguration(new ShowConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new VoucherConfiguration());

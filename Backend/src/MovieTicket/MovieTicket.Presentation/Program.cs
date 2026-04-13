@@ -196,13 +196,38 @@ using (var scope = app.Services.CreateScope())
 // =====================================================
 // MIDDLEWARE
 // =====================================================
+app.UseStaticFiles();
+
+// Map /assets to the real Backend/Assets folder.
+var contentRoot = builder.Environment.ContentRootPath;
+var assetsCandidates = new[]
+{
+    Path.GetFullPath(Path.Combine(contentRoot, "..", "..", "..", "Assets")),
+    Path.GetFullPath(Path.Combine(contentRoot, "..", "Assets"))
+};
+
+var assetsPath = assetsCandidates.FirstOrDefault(Directory.Exists) ?? assetsCandidates[0];
+if (!Directory.Exists(assetsPath))
+{
+    Directory.CreateDirectory(assetsPath);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(assetsPath),
+    RequestPath = "/assets"
+});
+
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
     options.ConfigObject.PersistAuthorization = true;
 });
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseCors("AllowAll");
 

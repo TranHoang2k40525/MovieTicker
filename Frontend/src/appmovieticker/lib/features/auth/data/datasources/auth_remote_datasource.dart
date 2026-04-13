@@ -36,6 +36,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String? address,
   }) async {
     try {
+      final Map<String, String>? fullNameData =
+          fullName == null ? null : {'FullName': fullName};
+      final Map<String, String>? genderData =
+          gender == null ? null : {'Gender': gender};
+      final Map<String, String>? dateOfBirthData =
+          dateOfBirth == null ? null : {'DateOfBirth': dateOfBirth};
+      final Map<String, String>? addressData =
+          address == null ? null : {'Address': address};
+
       final response = await dioClient.dio.post(
         ApiConstants.register,
         data: {
@@ -43,10 +52,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'Phone': phone,
           'Password': password,
           'ConfirmPassword': confirmPassword,
-          if (fullName != null) 'FullName': fullName,
-          if (gender != null) 'Gender': gender,
-          if (dateOfBirth != null) 'DateOfBirth': dateOfBirth,
-          if (address != null) 'Address': address,
+          ...?fullNameData,
+          ...?genderData,
+          ...?dateOfBirthData,
+          ...?addressData,
         },
       );
 

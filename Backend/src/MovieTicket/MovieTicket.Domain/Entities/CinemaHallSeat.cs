@@ -19,6 +19,10 @@ namespace MovieTicket.Domain.Entities
 
         public SeatStatus? Status { get; set; }
 
+        public string? RowSeat { get; set; }
+
+        public int? ColSeat { get; set; }
+
         public virtual ICollection<BookingSeat> BookingSeats { get; set; } = new List<BookingSeat>();
 
         public virtual CinemaHall? Hall { get; set; }

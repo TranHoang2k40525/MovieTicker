@@ -26,19 +26,22 @@ class AuthRepositoryImpl implements AuthRepository {
         emailOrPhone,
         password,
       );
-      final token = responseData['token'] as String?;
+      final token = _readToken(responseData);
       if (token != null) {
         await localDataSource.cacheToken(token);
       }
 
       final UserModel userModel = UserModel.fromJson(responseData);
+      await localDataSource.cacheUserProfile(
+        id: userModel.id,
+        fullName: userModel.fullName,
+        email: userModel.email,
+        phone: userModel.phone,
+      );
       return Right(userModel);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
-    } catch (e, stack) {
-      // Log chi tiet loi de debug, dong thoi tra ve message cu the thay vi chung chung
-      print('SignIn unexpected error: ');
-      print(stack);
+    } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -68,9 +71,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
-    } catch (e, stack) {
-      print('SignUp unexpected error: ');
-      print(stack);
+    } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
   }
@@ -82,11 +83,29 @@ class AuthRepositoryImpl implements AuthRepository {
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
-    } catch (e, stack) {
-      print('VerifyOtp unexpected error: ');
-      print(stack);
+    } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
+  }
+
+  String? _readToken(Map<String, dynamic> payload) {
+    const tokenKeys = [
+      'token',
+      'Token',
+      'accessToken',
+      'AccessToken',
+      'jwtToken',
+      'JwtToken',
+    ];
+
+    for (final key in tokenKeys) {
+      final value = payload[key];
+      if (value is String && value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return null;
   }
 }
 

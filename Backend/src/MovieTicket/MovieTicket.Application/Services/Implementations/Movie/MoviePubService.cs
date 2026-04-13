@@ -123,13 +123,22 @@ namespace MovieTicket.Application.Services.Implementations.Movie
             }
         }
 
+        private string GetImageUrl(string? imageUrl)
+        {
+            if (string.IsNullOrWhiteSpace(imageUrl)) return string.Empty;
+            if (imageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return imageUrl;
+
+            var fileName = System.IO.Path.GetFileName(imageUrl);
+            return $"/assets/Images/MOVIE/{fileName}";
+        }
+
         private MovieListDto MapToMovieListDto(Domain.Entities.Movie m)
         {
             return new MovieListDto
             {
                 MovieId = m.MovieId,
                 MovieTitle = m.MovieTitle ?? string.Empty,
-                ImageUrl = m.ImageUrl ?? string.Empty,
+                ImageUrl = GetImageUrl(m.ImageUrl),
                 MovieReleaseDate = m.MovieReleaseDate,
                 MovieRuntime = m.MovieRuntime,
                 MovieAge = m.MovieAge ?? string.Empty,
@@ -151,7 +160,7 @@ namespace MovieTicket.Application.Services.Implementations.Movie
                 MovieReleaseDate = m.MovieReleaseDate,
                 MovieRuntime = m.MovieRuntime,
                 MovieAge = m.MovieAge ?? string.Empty,
-                ImageUrl = m.ImageUrl ?? string.Empty,
+                ImageUrl = GetImageUrl(m.ImageUrl),
                 MovieActor = m.MovieActor ?? string.Empty,
                 MovieTrailler = m.MovieTrailler ?? string.Empty
             };

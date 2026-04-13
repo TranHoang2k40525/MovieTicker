@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection_container.dart' as di;
+import 'core/theme/liquid_glass_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
-import 'features/auth/presentation/pages/login_page.dart';
+import 'features/movies/presentation/pages/movies_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,13 +20,9 @@ class MyApp extends StatelessWidget {
       providers: [BlocProvider<AuthBloc>(create: (_) => di.sl<AuthBloc>())],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'R?p chi?u phim MTB 67CS1',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF37373)),
-          useMaterial3: true,
-          fontFamily: 'Roboto',
-        ),
-        home: const LoginPage(),
+        title: 'Rap chieu phim MTB 67CS1',
+        theme: LiquidGlassTheme.build(),
+        home: const MoviesPage(),
       ),
     );
   }

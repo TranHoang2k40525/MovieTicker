@@ -35,7 +35,7 @@ class CinemaHeader extends StatelessWidget {
                     width: 44,
                     height: 44,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    errorBuilder: (context, error, stackTrace) => Container(
                       width: 44,
                       height: 44,
                       decoration: const BoxDecoration(
@@ -99,12 +99,12 @@ class CinemaHeader extends StatelessWidget {
             child: Image.asset(
               'assets/images/—Pngtree—coming soon movie in cinema_1157635.png',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) =>
+              errorBuilder: (context, error, stackTrace) =>
                   Container(color: const Color(0xFF1A1A2E)),
             ),
           ),
           Positioned.fill(
-            child: Container(color: Colors.black.withOpacity(0.30)),
+            child: Container(color: Colors.black.withValues(alpha: 0.30)),
           ),
           SafeArea(
             bottom: false,
@@ -168,11 +168,11 @@ class CinemaHeader extends StatelessWidget {
                           width: 120,
                           height: 70,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (context, error, stackTrace) => Container(
                             width: 120,
                             height: 70,
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: const Icon(

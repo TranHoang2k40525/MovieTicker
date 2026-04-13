@@ -18,6 +18,8 @@ namespace MovieTicket.Domain.Entities
 
         public virtual ICollection<CinemaHallSeat> CinemaHallSeats { get; set; } = new List<CinemaHallSeat>();
 
+        public virtual ICollection<RoomLayout> RoomLayouts { get; set; } = new List<RoomLayout>();
+
         public virtual ICollection<Show> Shows { get; set; } = new List<Show>();
     }
 }
