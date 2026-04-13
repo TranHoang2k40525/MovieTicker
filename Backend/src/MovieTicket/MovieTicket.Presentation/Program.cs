@@ -1,7 +1,9 @@
 using MovieTicket.Infrastructure.AppDbContext;
 using MovieTicket.Application.IServices;
 using MovieTicket.Application.Services;
-using MovieTicket.Infrastructure.Repositories;
+using MovieTicket.Domain.IReponsitories.IMovie;
+using MovieTicket.Infrastructure.Repositories.CinemaRepository;
+using MovieTicket.Infrastructure.Repositories.MovieRespository;
 using MovieTicket.Infrastructure.Repositories.AuthRespository;
 using MovieTicket.Infrastructure.Services.IServices;
 using MovieTicket.Infrastructure.Services.Implementations;
@@ -13,6 +15,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using DotNetEnv;
 using Serilog;
+using MovieTicket.Application.Services.Implementations.Movie;
+using MovieTicket.Application.Services.IServices.IMovie;
+using MovieTicket.Domain.IResponsitories.ICinema;
+using MovieTicket.Application.Services.Implementations.Cinema;
+using MovieTicket.Application.Services.IServices.ICinema;
 
 // Load .env file
 Env.Load();
@@ -67,14 +74,14 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<MovieTicket.Application.IServices.IUserService, MovieTicket.Application.Services.UserService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddScoped<MovieTicket.Domain.IReponsitories.IMovie.IMovieRepository, MovieTicket.Infrastructure.Repositories.MovieRespository.MovieRepository>();
-builder.Services.AddScoped<MovieTicket.Application.Services.IServices.IMovie.IMoviePubService, MovieTicket.Application.Services.Implementations.Movie.MoviePubService>();
+builder.Services.AddScoped<IMovieRepository,MovieRepository>();
+builder.Services.AddScoped<IMoviePubService, MoviePubService>();
 
-builder.Services.AddScoped<MovieTicket.Domain.IResponsitories.ICinema.ICinemaRepository, MovieTicket.Infrastructure.Repositories.CinemaRepository.CinemaRepository>();
-builder.Services.AddScoped<MovieTicket.Domain.IResponsitories.ICinema.ICinemaShowtimeRepository, MovieTicket.Infrastructure.Repositories.CinemaRepository.CinemaShowtimeRepository>();
-builder.Services.AddScoped<MovieTicket.Application.Services.IServices.ICinema.ICinemaPubService, MovieTicket.Application.Services.Implementations.Cinema.CinemaPubService>();
+builder.Services.AddScoped<ICinemaRepository, CinemaRepository>();
+builder.Services.AddScoped<ICinemaShowtimeRepository, CinemaShowtimeRepository>();
+builder.Services.AddScoped<ICinemaPubService, CinemaPubService>();
 
 // Background Tasks
 builder.Services.AddHostedService<AccountCleanupService>();
