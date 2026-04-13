@@ -1,4 +1,4 @@
-using MovieTicket.Infrastructure.AppDbContext;
+﻿using MovieTicket.Infrastructure.AppDbContext;
 using MovieTicket.Application.IServices;
 using MovieTicket.Application.Services;
 using MovieTicket.Domain.IReponsitories.IMovie;
@@ -53,7 +53,7 @@ var hasEnvDbConfig = !string.IsNullOrWhiteSpace(envDbServer)
 var connectionString = hasEnvDbConfig
     ? $"Server={envDbServer};Database={envDbName};User Id={envDbUser ?? "sa"};Password={envDbPassword ?? string.Empty};TrustServerCertificate=True;Encrypt={envDbEncrypt};Trusted_Connection={envTrustedConnection};"
     : (config.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("Thiếu cấu hình ConnectionStrings:DefaultConnection hoặc biến DB_* trong .env"));
+        ?? throw new InvalidOperationException("Thiáº¿u cáº¥u hÃ¬nh ConnectionStrings:DefaultConnection hoáº·c biáº¿n DB_* trong .env"));
 
 // =====================================================
 // DEPENDENCY INJECTION
@@ -106,7 +106,7 @@ var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ??
                   "MovieTicketUsers";
 
 if (string.IsNullOrEmpty(jwtSecretKey))
-    throw new InvalidOperationException("JWT SecretKey không được cấu hình");
+    throw new InvalidOperationException("JWT SecretKey khÃ´ng Ä‘Æ°á»£c cáº¥u hÃ¬nh");
 
 var key = Encoding.ASCII.GetBytes(jwtSecretKey);
 
@@ -148,6 +148,7 @@ builder.Services.AddCors(options =>
 // CONTROLLERS & SWAGGER
 // =====================================================
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -220,3 +221,4 @@ finally
 {
     Log.CloseAndFlush();
 }
+

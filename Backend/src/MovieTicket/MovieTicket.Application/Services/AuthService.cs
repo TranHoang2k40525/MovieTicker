@@ -4,6 +4,7 @@ using MovieTicket.Domain.Entities;
 using MovieTicket.Domain.IResponsitories.IAuth;
 using MovieTicket.Infrastructure.Services.IServices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 namespace MovieTicket.Application.Services
 {
     public class AuthService : IAuthService
@@ -19,6 +20,7 @@ namespace MovieTicket.Application.Services
         private readonly IOtpService _otpService;
         private readonly IEmailService _emailService;
         private readonly ILogger<AuthService> _logger;
+        private readonly Microsoft.Extensions.Caching.Memory.IMemoryCache _memoryCache;
         private readonly IRoleRepository _roleRepository;
 
         public AuthService(
@@ -33,6 +35,7 @@ namespace MovieTicket.Application.Services
             IOtpService otpService,
             IEmailService emailService,
             ILogger<AuthService> logger,
+            Microsoft.Extensions.Caching.Memory.IMemoryCache memoryCache,
             IRoleRepository roleRepository)
         {
             _accountRepository = accountRepository;
@@ -46,7 +49,16 @@ namespace MovieTicket.Application.Services
             _otpService = otpService;
             _emailService = emailService;
             _logger = logger;
+            _memoryCache = memoryCache;
             _roleRepository = roleRepository;
+        }
+
+                        // Generate 6-digit OTP code locally for MemoryCache
+        private string GenerateOtpCode()
+        {
+            var random = new Random();
+            int otp = random.Next(0, 1000000);
+            return otp.ToString("D6");
         }
 
         public async Task<(bool Success, string Message)> RegisterAsync(RegisterDto request)
@@ -66,46 +78,14 @@ namespace MovieTicket.Application.Services
                 if (existingAccount != null)
                     return (false, "Email đã được đăng ký");
 
-                var account = new Account
-                {
-                    Email = request.Email.ToLower(),
-                    Phone = request.Phone,
-                    PasswordHash = _passwordHashService.HashPassword(request.Password),
-                    Status = Status.pending_verification,
-                    CreatedAt = DateTime.UtcNow
-                };
+                // GENERATE OTP and store the entire registration info in MemoryCache for 5 mins
+                var otpCode = GenerateOtpCode();
+                var cacheEntry = (Dto: request, Otp: otpCode);
+                _memoryCache.Set($"RegistrationOTP_{request.Email.ToLower()}", cacheEntry, TimeSpan.FromMinutes(5));
 
-                var createdAccount = await _accountRepository.CreateAsync(account);
-                if (createdAccount == null)
-                    return (false, "Không thể tạo tài khoản");
+                await _emailService.SendEmailAsync(request.Email, "Mã xác thực đăng ký - MovieTicket", $"Mã OTP của bạn là: {otpCode}. Thời hạn 5 phút.");
 
-                // Tạo đối tượng User kèm thông tin cơ bản
-                var user = new User
-                {
-                    AccountId = createdAccount.AccountId,
-                    Email = request.Email.ToLower(),
-                    Phone = request.Phone,
-                    FullName = request.FullName ?? string.Empty,
-                    Gender = request.Gender,
-                    DateOfBirth = request.DateOfBirth,
-                    Address = request.Address
-                };
-                await _userRepository.CreateAsync(user);
-
-                // Assign default "User" role
-                var roles = await GetOrCreateDefaultRole();
-                if (roles != null)
-                {
-                    await _accountRoleRepository.CreateAsync(new AccountRole
-                    {
-                        AccountId = createdAccount.AccountId,
-                        RoleId = roles.RoleId
-                    });
-                }
-
-                await _otpService.GenerateAndSendOtpAsync(createdAccount.AccountId, "registration", request.Email);
-
-                return (true, "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+                return (true, "Đăng ký thành công! Vui lòng kiểm tra email để xác nhận.");
             }
             catch (Exception ex)
             {
@@ -122,22 +102,124 @@ namespace MovieTicket.Application.Services
                     return (false, "Email và mã OTP không được để trống");
 
                 var account = await _accountRepository.GetByEmailAsync(request.Email);
-                if (account == null)
-                    return (false, "Tài khoản không tồn tại");
+                if (account != null)
+                    return (false, "Tài khoản đã tồn tại.");
 
-                if (account.Status == Status.active)
-                    return (false, "Tài khoản đã được xác thực");
-
-                bool otpValid = await _otpService.VerifyOtpAsync(account.AccountId, request.OtpCode, "registration");
-                if (!otpValid)
+                // Verify OTP FROM MEMORY CACHE
+                if (!_memoryCache.TryGetValue("RegistrationOTP_" + request.Email.ToLower(), out (RegisterDto Dto, string Otp) cachedEntry) || string.IsNullOrEmpty(cachedEntry.Otp))
                     return (false, "Mã OTP không hợp lệ hoặc đã hết hạn");
+                
+                string cachedOtp = cachedEntry.Otp;
+                RegisterDto regData = cachedEntry.Dto;
 
-                // Only update to active AFTER successful OTP verification
-                account.Status = Status.active;
-                account.UpdatedAt = DateTime.UtcNow;
-                await _accountRepository.UpdateAsync(account);
+                if (cachedOtp != request.OtpCode)
+                    return (false, "Mã OTP không hợp lệ");
+
+                // CREATE ACCOUNT ONLY AFTER OTP VERIFIED
+                var newAccount = new Account
+                {
+                    Email = regData.Email.ToLower(),
+                    Phone = regData.Phone,
+                    PasswordHash = _passwordHashService.HashPassword(regData.Password),
+                    Status = Status.active, // Active immediately since OTP verified
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var createdAccount = await _accountRepository.CreateAsync(newAccount);
+                if (createdAccount == null)
+                    return (false, "Không thể tạo tài khoản");
+
+                // CREATE USER
+                var user = new User
+                {
+                    AccountId = createdAccount.AccountId,
+                    Email = regData.Email.ToLower(),
+                    Phone = regData.Phone,
+                    FullName = regData.FullName ?? string.Empty,
+                    Gender = regData.Gender,
+                    DateOfBirth = regData.DateOfBirth,
+                    Address = regData.Address
+                };
+                await _userRepository.CreateAsync(user);
+
+                // Assign default role
+                var roles = await GetOrCreateDefaultRole();
+                if (roles != null)
+                {
+                    await _accountRoleRepository.CreateAsync(new AccountRole
+                    {
+                        AccountId = createdAccount.AccountId,
+                        RoleId = roles.RoleId
+                    });
+                }
+
+                _memoryCache.Remove($"RegistrationOTP_{request.Email.ToLower()}");
 
                 return (true, "Xác thực thành công! Tài khoản đã kích hoạt.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Lỗi xác thực OTP: {ex.Message}");
+                return (false, "Đã xảy ra lỗi, vui lòng thử lại");
+            }
+        }
+
+        public async Task<(bool Success, string Message)> VerifyRegistrationOtpAsync(VerifyRegistrationDto request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.OtpCode))
+                    return (false, "Email và mã OTP không được để trống");
+
+                var account = await _accountRepository.GetByEmailAsync(request.Email);
+                if (account != null)
+                    return (false, "Tài khoản đã được đăng ký trước đó.");
+
+                // Verify OTP FROM MEMORY CACHE
+                if (!_memoryCache.TryGetValue($"RegistrationOTP_{request.Email.ToLower()}", out string? cachedOtp) || cachedOtp != request.OtpCode)
+                    return (false, "Mã OTP không hợp lệ hoặc đã hết hạn");
+
+                // CREATE ACCOUNT ONLY AFTER OTP VERIFIED
+                var newAccount = new Account
+                {
+                    Email = request.Email.ToLower(),
+                    Phone = request.Phone,
+                    PasswordHash = _passwordHashService.HashPassword(request.Password),
+                    Status = Status.active, // Active immediately since OTP verified
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var createdAccount = await _accountRepository.CreateAsync(newAccount);
+                if (createdAccount == null)
+                    return (false, "Không thể tạo tài khoản");
+
+                // CREATE USER
+                var user = new User
+                {
+                    AccountId = createdAccount.AccountId,
+                    Email = request.Email.ToLower(),
+                    Phone = request.Phone,
+                    FullName = request.FullName ?? string.Empty,
+                    Gender = request.Gender,
+                    DateOfBirth = request.DateOfBirth,
+                    Address = request.Address
+                };
+                await _userRepository.CreateAsync(user);
+
+                // Assign default role
+                var roles = await GetOrCreateDefaultRole();
+                if (roles != null)
+                {
+                    await _accountRoleRepository.CreateAsync(new AccountRole
+                    {
+                        AccountId = createdAccount.AccountId,
+                        RoleId = roles.RoleId
+                    });
+                }
+
+                _memoryCache.Remove($"RegistrationOTP_{request.Email.ToLower()}");
+
+                return (true, "Tạo tài khoản và xác thực thành công! Tài khoản đã kích hoạt.");
             }
             catch (Exception ex)
             {
@@ -655,3 +737,11 @@ namespace MovieTicket.Application.Services
         }
     }
 }
+
+
+
+
+
+
+
+
