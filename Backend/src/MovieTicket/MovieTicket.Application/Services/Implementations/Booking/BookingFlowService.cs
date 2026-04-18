@@ -13,6 +13,7 @@ namespace MovieTicket.Application.Services.Implementations.Booking
     public class BookingFlowService : IBookingFlowService
     {
         private const int SeatHoldMinutes = 2;
+        private const int PaymentGraceMinutes = 1;
 
         private readonly IBookingRepository _bookingRepository;
         private readonly ISeatMapRepository _seatMapRepository;
@@ -195,6 +196,8 @@ namespace MovieTicket.Application.Services.Implementations.Booking
             }
 
             var products = NormalizeProducts(request.Products ?? new List<ConfirmBookingProductDto>());
+
+            booking.BookingProducts.Clear();
             foreach (var item in products)
             {
                 var product = await _productRepository.GetProductByIdAsync(item.ProductId);
@@ -215,13 +218,14 @@ namespace MovieTicket.Application.Services.Implementations.Booking
                 });
             }
 
+            var paymentHoldUntil = now.AddMinutes(PaymentGraceMinutes);
             foreach (var bookingSeat in booking.BookingSeats)
             {
-                bookingSeat.Status = BookingSeatStatus.booked;
-                bookingSeat.HoldUntil = null;
+                bookingSeat.Status = BookingSeatStatus.held;
+                bookingSeat.HoldUntil = paymentHoldUntil;
             }
 
-            booking.Status = BookingStatus.confirmed;
+            booking.Status = BookingStatus.pending;
             booking.TotalSeats = booking.BookingSeats.Count;
             await _bookingRepository.SaveChangesAsync();
 
@@ -235,7 +239,7 @@ namespace MovieTicket.Application.Services.Implementations.Booking
             {
                 Success = true,
                 BookingId = booking.BookingId,
-                Message = "Đặt vé thành công"
+                Message = "Đã lưu combo, vui lòng thanh toán"
             };
         }
 

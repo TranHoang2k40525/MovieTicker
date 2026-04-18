@@ -37,7 +37,7 @@ namespace MovieTicket.Infrastructure.Repositories.CinemaRepository
             return await _context.Shows
                 .Include(s => s.Movie)
                 .Include(s => s.Hall)
-                    .ThenInclude(h => h.Cinema)
+                    .ThenInclude(h => h!.Cinema)
                 .AsNoTracking()
                 .Where(s => s.MovieId == movieId
                             && s.ShowDate >= fromDate 

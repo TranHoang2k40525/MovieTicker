@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace MovieTicket.Application.DTOs.Auth
 {
@@ -11,7 +10,7 @@ namespace MovieTicket.Application.DTOs.Auth
     {
         public int AccountId { get; set; }
         public string? Email { get; set; }
-        public string FullName { get; set; }
+        public string FullName { get; set; } = string.Empty;
         public string? AccessToken { get; set; }
         public string? RefreshToken { get; set; }
         public List<string> Roles { get; set; } = new List<string>();
