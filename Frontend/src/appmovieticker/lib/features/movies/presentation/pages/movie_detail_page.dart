@@ -113,11 +113,6 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
     }
     return (size.width / 1200).clamp(0.9, 1.25);
   }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'Dang cap nhat';
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
 }
 
 class _Header extends StatelessWidget {

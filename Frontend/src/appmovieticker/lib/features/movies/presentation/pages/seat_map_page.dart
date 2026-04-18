@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../../../../core/di/injection_container.dart' as di;
+import '../../../../core/network/dio_client.dart';
 import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/seat_map_item.dart';
+import 'combo_selection_page.dart';
 
 class SeatMapPage extends StatefulWidget {
   const SeatMapPage({
@@ -45,6 +47,7 @@ class SeatMapPage extends StatefulWidget {
 class _SeatMapPageState extends State<SeatMapPage> {
   final MoviesRemoteDataSource _remoteDataSource = di.sl<MoviesRemoteDataSource>();
   final AuthLocalDataSource _localDataSource = di.sl<AuthLocalDataSource>();
+  final DioClient _dioClient = di.sl<DioClient>();
   final TransformationController _transformController = TransformationController();
   final Set<int> _selectedSeatIds = <int>{};
 
@@ -374,9 +377,119 @@ class _SeatMapPageState extends State<SeatMapPage> {
   }
 
   void _handleBook() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Phần xác nhận đặt vé sẽ nối tiếp ở API đặt ghế.')),
+    _proceedToComboSelection();
+  }
+
+  Future<void> _proceedToComboSelection() async {
+    final scale = _uiScale(context);
+    
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            SizedBox(width: 16 * scale),
+            const Expanded(child: Text('Đang xác nhận ghế...')),
+          ],
+        ),
+      ),
     );
+
+    try {
+      final token = await _localDataSource.getToken();
+      if (!mounted) return;
+      if (token == null || token.isEmpty) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vui lòng đăng nhập lại')),
+        );
+        return;
+      }
+
+      // Call backend API to hold seats
+      final selectedSeatsList = _selectedSeatIds.toList();
+      final response = await _dioClient.dio.post(
+        '/bookings/holds',
+        data: {
+          'showId': widget.showId,
+          'seatIds': selectedSeatsList,
+        },
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog
+
+      final responseData = response.data;
+      final success = responseData['success'] ?? false;
+
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(responseData['message'] ?? 'Không thể giữ ghế')),
+        );
+        return;
+      }
+
+      final holdData = responseData['data'] ?? responseData;
+      final holdId = holdData['holdId'] as int?;
+      final expiresAtUtc = holdData['expiresAtUtc'] as String?;
+
+      if (holdId == null || expiresAtUtc == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dữ liệu phản hồi không hợp lệ')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Navigate to combo selection page
+      final seatMap = _seatMap;
+      if (seatMap != null) {
+        final selectedSeatNumbers = selectedSeatsList.map((seatId) {
+          for (final row in seatMap.rows) {
+            for (final cell in row.cells) {
+              if (cell.seatId == seatId) {
+                return cell.seatNumber ?? 'N/A';
+              }
+            }
+          }
+          return 'N/A';
+        }).toList();
+
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ComboSelectionPage(
+              movieTitle: widget.movieTitle,
+              cinemaName: widget.cinemaName,
+              cinemaAddress: widget.cinemaAddress,
+              holdId: holdId,
+              expiresAt: DateTime.parse(expiresAtUtc),
+              selectedSeats: selectedSeatNumbers,
+              selectedSeatTotalPrice: _selectedPrice(seatMap),
+              showId: widget.showId,
+            ),
+          ),
+        );
+      }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      
+      final errorMsg = _parseErrorMessage(e) ?? 'Không thể giữ ghế. Vui lòng thử lại.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMsg)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: $e')),
+      );
+    }
   }
 
   double _uiScale(BuildContext context) {

@@ -28,6 +28,7 @@ using MovieTicket.Application.Services.IServices.IBooking;
 using MovieTicket.Application.Services.Implementations.Booking;
 using MovieTicket.Domain.IResponsitories.IBooking;
 using MovieTicket.Infrastructure.Repositories.BookingRepository;
+using MovieTicket.Presentation.Services;
 
 // Load .env file
 Env.Load();
@@ -77,6 +78,7 @@ builder.Services.AddScoped<IAccountRoleRepository, AccountRoleRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISeatMapRepository, SeatMapRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 
 
     // Services
@@ -95,8 +97,10 @@ builder.Services.AddScoped<ICinemaShowtimeRepository, CinemaShowtimeRepository>(
 builder.Services.AddScoped<ICinemaPubService, CinemaPubService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ISeatMapService, SeatMapService>();
+builder.Services.AddScoped<IBookingFlowService, BookingFlowService>();
     // Background Tasks
     builder.Services.AddHostedService<AccountCleanupService>();
+    builder.Services.AddHostedService<BookingHoldCleanupService>();
 
 // DbContext
 builder.Services.AddDbContext<AppMovieTickerDbContext>(options =>

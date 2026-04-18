@@ -6,6 +6,7 @@ import '../models/movie_showtime_item.dart';
 import '../models/cinema_showtime_item.dart';
 import '../models/nearby_cinema_item.dart';
 import '../models/seat_map_item.dart';
+import '../models/product_item.dart';
 
 abstract class MoviesRemoteDataSource {
   Future<List<MovieListItem>> getNowShowingMovies();
@@ -22,6 +23,7 @@ abstract class MoviesRemoteDataSource {
   });
   Future<SeatMapResponseItem> getSeatMap({required int showId});
   Future<MovieListItem> getMovieDetail({required int movieId});
+  Future<List<ProductItem>> getProducts();
 }
 
 class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
@@ -131,6 +133,12 @@ class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
     final data = response.data;
     final payload = _unwrapSeatMapPayload(data);
     return SeatMapResponseItem.fromJson(payload);
+  }
+
+  @override
+  Future<List<ProductItem>> getProducts() async {
+    final response = await dioClient.dio.get('/Product/getAllProducts');
+    return _parseList(response.data, ProductItem.fromJson);
   }
 
   Future<List<MovieListItem>> _fetchMovieList(String path) async {

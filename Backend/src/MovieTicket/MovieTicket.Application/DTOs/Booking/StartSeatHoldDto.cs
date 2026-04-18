@@ -1,4 +1,5 @@
-﻿namespace MovieTicket.Application.DTOs.Booking
+﻿// Backend/src/MovieTicket/MovieTicket.Application/DTOs/Booking/StartSeatHoldDto.cs
+namespace MovieTicket.Application.DTOs.Booking
 {
     public class StartSeatHoldRequest
     {
@@ -15,10 +16,16 @@
         public string Message { get; set; } = string.Empty;
     }
 
+    public class ConfirmBookingProductDto
+    {
+        public int ProductId { get; set; }
+        public int Quantity { get; set; } = 1;
+    }
+
     public class ConfirmSeatBookingRequest
     {
         public int HoldId { get; set; }
-        public List<int> ProductIds { get; set; } = new();
+        public List<ConfirmBookingProductDto> Products { get; set; } = new();
     }
 
     public class ConfirmSeatBookingResponse
