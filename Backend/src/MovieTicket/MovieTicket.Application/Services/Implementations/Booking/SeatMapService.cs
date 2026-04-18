@@ -122,12 +122,6 @@ namespace MovieTicket.Application.Services.Implementations.Booking
                                     state = bookedState;
                                 }
 
-                                // Ghế đôi lỗi cặp coi như không thể chọn để tránh ghế lẻ ghế đôi.
-                                if (seat.SeatType == SeatType.Couple && invalidCoupleSeatIds.Contains(seat.SeatId))
-                                {
-                                    state = SeatStates.Unavailable;
-                                }
-
                                 cellDto.State = state;
                                 cellDto.Selectable = state == SeatStates.Available;
                             }

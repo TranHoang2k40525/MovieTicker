@@ -5,6 +5,7 @@ import '../../../../core/di/injection_container.dart' as di;
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/movie_list_item.dart';
 import '../../data/models/movie_showtime_item.dart';
+import 'seat_map_page.dart';
 import '../widgets/movie_menu_dialog.dart';
 
 class MovieShowtimePage extends StatefulWidget {
@@ -112,6 +113,7 @@ class _MovieShowtimePageState extends State<MovieShowtimePage> {
   @override
   Widget build(BuildContext context) {
     final scale = _uiScale(context);
+    final movie = widget.movie;
     final dates = List.generate(30, (index) => DateTime.now().add(Duration(days: index)));
 
     return Scaffold(
@@ -129,7 +131,7 @@ class _MovieShowtimePageState extends State<MovieShowtimePage> {
               children: [
                 _Header(
                   scale: scale,
-                  title: widget.movie.movieTitle,
+                  title: movie.movieTitle,
                   onBack: () => Navigator.of(context).maybePop(),
                   onMenuTap: () => showMovieMenuDialog(context, scale: scale),
                 ),
@@ -139,14 +141,14 @@ class _MovieShowtimePageState extends State<MovieShowtimePage> {
                     children: [
                       Expanded(
                         child: Text(
-                          widget.movie.movieTitle.toUpperCase(),
+                          movie.movieTitle.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: 14 * scale, fontWeight: FontWeight.w700),
                         ),
                       ),
                       Text(
-                        '${widget.movie.movieRuntime ?? 0} phút',
+                        '${movie.movieRuntime ?? 0} phút',
                         style: TextStyle(fontSize: 12 * scale, color: const Color(0xFF666666)),
                       ),
                     ],
@@ -174,6 +176,7 @@ class _MovieShowtimePageState extends State<MovieShowtimePage> {
                                   final cinema = _cinemas[index];
                                   final expanded = _expandedCinemaIndex == index;
                                   return _CinemaShowtimeCard(
+                                    movie: movie,
                                     cinema: cinema,
                                     scale: scale,
                                     expanded: expanded,
@@ -350,12 +353,14 @@ class _DateStrip extends StatelessWidget {
 
 class _CinemaShowtimeCard extends StatelessWidget {
   const _CinemaShowtimeCard({
+    required this.movie,
     required this.cinema,
     required this.scale,
     required this.expanded,
     required this.onToggle,
   });
 
+  final MovieListItem movie;
   final MovieShowtimeCinemaItem cinema;
   final double scale;
   final bool expanded;
@@ -433,7 +438,7 @@ class _CinemaShowtimeCard extends StatelessWidget {
                           ),
                         ),
                       ]
-                    : _buildShowtimeGroups(scale),
+                    : _buildShowtimeGroups(scale, movie),
               ),
             ),
         ],
@@ -441,7 +446,7 @@ class _CinemaShowtimeCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildShowtimeGroups(double scale) {
+  List<Widget> _buildShowtimeGroups(double scale, MovieListItem movie) {
     final grouped = <String, List<MovieShowtimeItem>>{};
     for (final showtime in cinema.showtimes) {
       final key = '${showtime.experienceType}::${showtime.hallName}';
@@ -451,6 +456,8 @@ class _CinemaShowtimeCard extends StatelessWidget {
     return grouped.entries
         .map(
           (entry) => _ShowtimeGroup(
+            movie: movie,
+            cinema: cinema,
             hallName: entry.value.first.hallName,
             experienceType: entry.value.first.experienceType,
             showtimes: entry.value,
@@ -463,12 +470,16 @@ class _CinemaShowtimeCard extends StatelessWidget {
 
 class _ShowtimeGroup extends StatelessWidget {
   const _ShowtimeGroup({
+    required this.movie,
+    required this.cinema,
     required this.hallName,
     required this.experienceType,
     required this.showtimes,
     required this.scale,
   });
 
+  final MovieListItem movie;
+  final MovieShowtimeCinemaItem cinema;
   final String hallName;
   final String experienceType;
   final List<MovieShowtimeItem> showtimes;
@@ -489,7 +500,31 @@ class _ShowtimeGroup extends StatelessWidget {
           Wrap(
             spacing: 8 * scale,
             runSpacing: 8 * scale,
-            children: showtimes.map((showtime) => _TimeChip(label: _formatTime(showtime.startTime), scale: scale)).toList(),
+            children: showtimes
+                .map(
+                  (showtime) => _TimeChip(
+                    label: _formatTime(showtime.startTime),
+                    scale: scale,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SeatMapPage(
+                          showId: showtime.showId,
+                          movieTitle: movie.movieTitle,
+                          movieRuntime: movie.movieRuntime,
+                          movieAge: movie.movieAge,
+                          movieGenre: movie.movieGenre,
+                          cinemaName: cinema.cinemaName,
+                          cinemaAddress: cinema.cityAddress,
+                          hallName: showtime.hallName,
+                          experienceType: showtime.experienceType,
+                          startTime: _formatTime(showtime.startTime),
+                          showDate: showtime.showDate,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -506,23 +541,28 @@ class _ShowtimeGroup extends StatelessWidget {
 }
 
 class _TimeChip extends StatelessWidget {
-  const _TimeChip({required this.label, required this.scale});
+  const _TimeChip({required this.label, required this.scale, this.onTap});
 
   final String label;
   final double scale;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 7 * scale),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(6 * scale),
-        border: Border.all(color: const Color(0xFFB7B7B7)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 11 * scale, color: const Color(0xFF2C2C2C)),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6 * scale),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 7 * scale),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(6 * scale),
+          border: Border.all(color: const Color(0xFFB7B7B7)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(fontSize: 11 * scale, color: const Color(0xFF2C2C2C)),
+        ),
       ),
     );
   }
@@ -552,12 +592,6 @@ class _EmptyState extends StatelessWidget {
       ),
     );
   }
-}
-
-class LocationPermissionException implements Exception {
-  const LocationPermissionException(this.message);
-
-  final String message;
 }
 
 class _Header extends StatelessWidget {

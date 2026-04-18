@@ -27,7 +27,7 @@ namespace MovieTicket.Domain.Entities
 
         public virtual CinemaHall? Hall { get; set; }
     }
-    public enum SeatType { Normal, VIP, Couple }
+    public enum SeatType { Normal = 1, VIP =2, Couple = 3 }
    public enum SeatStatus
     {
         available,

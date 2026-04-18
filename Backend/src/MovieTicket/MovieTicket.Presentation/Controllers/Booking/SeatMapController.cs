@@ -4,7 +4,7 @@ using MovieTicket.Application.Services.IServices.IBooking;
 using MovieTicket.Domain.Entities;
 using MovieTicket.Domain.IResponsitories.IAuth;
 
-namespace MovieTicket.Presentation.Booking
+namespace MovieTicket.Presentation.Controllers.Booking
 {
     [ApiController]
     [Route("api/[controller]")]

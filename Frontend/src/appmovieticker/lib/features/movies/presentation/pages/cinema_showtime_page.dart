@@ -4,6 +4,7 @@ import '../../../../core/di/injection_container.dart' as di;
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/cinema_showtime_item.dart';
 import '../../data/models/nearby_cinema_item.dart';
+import 'seat_map_page.dart';
 import '../widgets/movie_menu_dialog.dart';
 
 class CinemaShowtimePage extends StatefulWidget {
@@ -131,6 +132,7 @@ class _CinemaShowtimePageState extends State<CinemaShowtimePage> {
                                   final movie = _movies[index];
                                   final expanded = _expandedMovieIndex == index;
                                   return _MovieShowtimeCard(
+                                    cinema: widget.cinema,
                                     movie: movie,
                                     scale: scale,
                                     expanded: expanded,
@@ -337,12 +339,14 @@ class _DateStrip extends StatelessWidget {
 
 class _MovieShowtimeCard extends StatelessWidget {
   const _MovieShowtimeCard({
+    required this.cinema,
     required this.movie,
     required this.scale,
     required this.expanded,
     required this.onToggle,
   });
 
+  final NearbyCinemaItem cinema;
   final CinemaShowtimeMovieItem movie;
   final double scale;
   final bool expanded;
@@ -407,6 +411,23 @@ class _MovieShowtimeCard extends StatelessWidget {
                                   (showtime) => _TimeChip(
                                     label: _formatTime(showtime.startTime),
                                     scale: scale,
+                                    onTap: () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => SeatMapPage(
+                                          showId: showtime.showId,
+                                          movieTitle: movie.movieTitle,
+                                          movieRuntime: movie.movieRuntime,
+                                          movieAge: movie.movieAge,
+                                          movieGenre: movie.movieGenre,
+                                          cinemaName: cinema.cinemaName,
+                                          cinemaAddress: cinema.cityAddress,
+                                          hallName: showtime.hallName,
+                                          experienceType: showtime.experienceType,
+                                          startTime: _formatTime(showtime.startTime),
+                                          showDate: showtime.showDate,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 )
                                 .toList(),
@@ -461,20 +482,25 @@ class _MovieShowtimeCard extends StatelessWidget {
 }
 
 class _TimeChip extends StatelessWidget {
-  const _TimeChip({required this.label, required this.scale});
+  const _TimeChip({required this.label, required this.scale, this.onTap});
 
   final String label;
   final double scale;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 7 * scale),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6 * scale),
-        border: Border.all(color: const Color(0xFFB7B7B7)),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6 * scale),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 7 * scale),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(6 * scale),
+          border: Border.all(color: const Color(0xFFB7B7B7)),
+        ),
+        child: Text(label, style: TextStyle(fontSize: 11 * scale, color: const Color(0xFF2C2C2C))),
       ),
-      child: Text(label, style: TextStyle(fontSize: 11 * scale, color: const Color(0xFF2C2C2C))),
     );
   }
 }

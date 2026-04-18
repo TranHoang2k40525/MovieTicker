@@ -10,8 +10,14 @@ import '../../../movies/presentation/pages/movies_page.dart';
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
   final String? prefilledPassword;
+  final bool returnToPreviousOnSuccess;
 
-  const LoginPage({super.key, this.prefilledEmail, this.prefilledPassword});
+  const LoginPage({
+    super.key,
+    this.prefilledEmail,
+    this.prefilledPassword,
+    this.returnToPreviousOnSuccess = false,
+  });
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -57,9 +63,13 @@ class _LoginPageState extends State<LoginPage> {
       listener: (context, state) {
         if (state is AuthSuccess) {
           _showSnack('Đăng nhập thành công!');
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const MoviesPage()),
-          );
+          if (widget.returnToPreviousOnSuccess) {
+            Navigator.of(context).pop(true);
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const MoviesPage()),
+            );
+          }
         } else if (state is AuthFailure) {
           _showSnack(state.message);
         }

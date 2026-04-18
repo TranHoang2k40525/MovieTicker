@@ -1,9 +1,11 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../models/movie_list_item.dart';
 import '../models/movie_showtime_item.dart';
 import '../models/cinema_showtime_item.dart';
 import '../models/nearby_cinema_item.dart';
+import '../models/seat_map_item.dart';
 
 abstract class MoviesRemoteDataSource {
   Future<List<MovieListItem>> getNowShowingMovies();
@@ -18,13 +20,15 @@ abstract class MoviesRemoteDataSource {
     required double longitude,
     DateTime? filterDate,
   });
+  Future<SeatMapResponseItem> getSeatMap({required int showId});
   Future<MovieListItem> getMovieDetail({required int movieId});
 }
 
 class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
-  MoviesRemoteDataSourceImpl({required this.dioClient});
+  MoviesRemoteDataSourceImpl({required this.dioClient, required this.localDataSource});
 
   final DioClient dioClient;
+  final AuthLocalDataSource localDataSource;
 
   @override
   Future<List<MovieListItem>> getNowShowingMovies() {
@@ -112,6 +116,23 @@ class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
     throw Exception('Khong tim thay chi tiet phim #$movieId');
   }
 
+  @override
+  Future<SeatMapResponseItem> getSeatMap({required int showId}) async {
+    final profile = await localDataSource.getUserProfile();
+    final accountId = _readInt(profile?['id']);
+
+    final response = await dioClient.dio.get(
+      '/SeatMap/showtimes/$showId/layout',
+      queryParameters: {
+        if (accountId > 0) 'accountId': accountId,
+      },
+    );
+
+    final data = response.data;
+    final payload = _unwrapSeatMapPayload(data);
+    return SeatMapResponseItem.fromJson(payload);
+  }
+
   Future<List<MovieListItem>> _fetchMovieList(String path) async {
     final response = await dioClient.dio.get(path);
     return _parseList(response.data, MovieListItem.fromJson);
@@ -143,7 +164,24 @@ class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
     return const [];
   }
 
+  Map<String, dynamic> _unwrapSeatMapPayload(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final nested = data['data'] ?? data['Data'] ?? data['result'] ?? data['Result'];
+      if (nested is Map<String, dynamic>) {
+        return nested;
+      }
+      return data;
+    }
+    throw Exception('Dữ liệu sơ đồ ghế không hợp lệ');
+  }
+
   String _formatDateOnly(DateTime date) {
     return '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  int _readInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }

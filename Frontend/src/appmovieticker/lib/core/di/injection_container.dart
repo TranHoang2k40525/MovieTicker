@@ -29,7 +29,7 @@ Future<void> initDependencies() async {
     () => AuthRemoteDataSourceImpl(dioClient: sl()),
   );
   sl.registerLazySingleton<MoviesRemoteDataSource>(
-    () => MoviesRemoteDataSourceImpl(dioClient: sl()),
+    () => MoviesRemoteDataSourceImpl(dioClient: sl(), localDataSource: sl()),
   );
 
   // Repository
