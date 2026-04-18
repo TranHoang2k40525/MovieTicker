@@ -74,7 +74,6 @@ class CinemaDetailPage extends StatelessWidget {
                     child: _MapPreview(
                       cinema: cinema,
                       scale: scale,
-                      onTap: () => _launchUrl(googleMapSearchUrl),
                     ),
                   ),
                 ),
@@ -202,12 +201,10 @@ class _MapPreview extends StatefulWidget {
   const _MapPreview({
     required this.cinema,
     required this.scale,
-    required this.onTap,
   });
 
   final NearbyCinemaItem cinema;
   final double scale;
-  final VoidCallback onTap;
 
   @override
   State<_MapPreview> createState() => _MapPreviewState();
@@ -226,7 +223,7 @@ class _MapPreviewState extends State<_MapPreview> {
     if (_supportsEmbeddedMap) {
       _controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0xFFF3F3F3))
+        ..setBackgroundColor(Colors.white)
         ..loadRequest(Uri.parse(_buildGoogleMapsUrl()));
     }
   }
@@ -234,8 +231,8 @@ class _MapPreviewState extends State<_MapPreview> {
   String _buildGoogleMapsUrl() {
     final lat = widget.cinema.latitude.toStringAsFixed(6);
     final lng = widget.cinema.longitude.toStringAsFixed(6);
-    final query = Uri.encodeComponent('${widget.cinema.cinemaName}, ${widget.cinema.cityAddress} ($lat,$lng)');
-    return 'https://www.google.com/maps/search/?api=1&query=$query';
+    final query = Uri.encodeComponent('${widget.cinema.cinemaName}, ${widget.cinema.cityAddress}');
+    return 'https://www.google.com/maps?q=$query&ll=$lat,$lng&z=16&output=embed';
   }
 
   @override
@@ -243,141 +240,23 @@ class _MapPreviewState extends State<_MapPreview> {
     final scale = widget.scale;
 
     if (!_supportsEmbeddedMap || _controller == null) {
-      return GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
-          height: 180 * scale,
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE8ECEF), Color(0xFFD8DEE3), Color(0xFFEFE9D7)],
-            ),
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              CustomPaint(painter: _FallbackMapPainter()),
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.location_pin, size: 44 * scale, color: const Color(0xFFE7352D)),
-                    SizedBox(height: 6 * scale),
-                    _MapChip(label: widget.cinema.cinemaName, scale: scale),
-                    SizedBox(height: 6 * scale),
-                    _MapChip(
-                      label: '${widget.cinema.latitude.toStringAsFixed(4)}, ${widget.cinema.longitude.toStringAsFixed(4)}',
-                      scale: scale,
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                left: 8 * scale,
-                top: 8 * scale,
-                child: _MapChip(label: 'Google Maps', scale: scale),
-              ),
-            ],
-          ),
+      return Container(
+        height: 220 * scale,
+        width: double.infinity,
+        color: const Color(0xFFF3F3F3),
+        alignment: Alignment.center,
+        child: Text(
+          'Google Maps chỉ hỗ trợ nhúng trên Android/iOS',
+          style: TextStyle(fontSize: 11 * scale, color: const Color(0xFF666666)),
+          textAlign: TextAlign.center,
         ),
       );
     }
 
-    return Stack(
-      children: [
-        SizedBox(
-          height: 180 * scale,
-          width: double.infinity,
-          child: WebViewWidget(controller: _controller!),
-        ),
-        Positioned(
-          left: 8 * scale,
-          top: 8 * scale,
-          child: _MapChip(label: 'Google Maps', scale: scale),
-        ),
-        Positioned(
-          right: 8 * scale,
-          top: 8 * scale,
-          child: _MapChip(label: widget.cinema.cinemaName, scale: scale),
-        ),
-      ],
-    );
-  }
-}
-
-class _FallbackMapPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = const Color(0xFFC4CBD1)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    for (var i = 1; i < 5; i++) {
-      final dx = size.width * i / 5;
-      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), gridPaint);
-    }
-    for (var i = 1; i < 4; i++) {
-      final dy = size.height * i / 4;
-      canvas.drawLine(Offset(0, dy), Offset(size.width, dy), gridPaint);
-    }
-
-    final roadPaint = Paint()
-      ..color = const Color(0xFF8E9AA3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10
-      ..strokeCap = StrokeCap.round;
-    final centerPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.85)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    final mainRoad = Path()
-      ..moveTo(size.width * 0.08, size.height * 0.76)
-      ..cubicTo(size.width * 0.28, size.height * 0.58, size.width * 0.44, size.height * 0.35, size.width * 0.62, size.height * 0.28)
-      ..cubicTo(size.width * 0.76, size.height * 0.23, size.width * 0.84, size.height * 0.16, size.width * 0.92, size.height * 0.1);
-    canvas.drawPath(mainRoad, roadPaint);
-    canvas.drawPath(mainRoad, centerPaint);
-
-    final sideRoad = Path()
-      ..moveTo(size.width * 0.2, size.height * 0.12)
-      ..cubicTo(size.width * 0.28, size.height * 0.25, size.width * 0.35, size.height * 0.38, size.width * 0.47, size.height * 0.5)
-      ..lineTo(size.width * 0.55, size.height * 0.64);
-    canvas.drawPath(sideRoad, roadPaint..strokeWidth = 7);
-    canvas.drawPath(sideRoad, centerPaint..strokeWidth = 2.5);
-
-    final markerPaint = Paint()..color = const Color(0xFFE7352D);
-    canvas.drawCircle(Offset(size.width * 0.58, size.height * 0.47), 15, markerPaint);
-    canvas.drawCircle(Offset(size.width * 0.58, size.height * 0.47), 6, Paint()..color = Colors.white);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _MapChip extends StatelessWidget {
-  const _MapChip({required this.label, required this.scale});
-
-  final String label;
-  final double scale;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 4 * scale),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(fontSize: 10 * scale, fontWeight: FontWeight.w700),
-      ),
+    return SizedBox(
+      height: 220 * scale,
+      width: double.infinity,
+      child: WebViewWidget(controller: _controller!),
     );
   }
 }

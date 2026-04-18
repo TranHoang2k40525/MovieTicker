@@ -5,6 +5,7 @@ import '../../../auth/presentation/pages/login_page.dart';
 import '../../../auth/presentation/pages/register_page.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../pages/nearby_cinemas_page.dart';
+import '../pages/movie_booking_list_page.dart';
 
 Future<void> showMovieMenuDialog(
   BuildContext context, {
@@ -133,7 +134,12 @@ Future<void> showMovieMenuDialog(
                       child: _MenuTextButton(
                         label: 'Đặt vé theo phim',
                         scale: scale,
-                        onTap: () => Navigator.of(dialogContext).pop(),
+                        onTap: () {
+                          Navigator.of(dialogContext).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const MovieBookingListPage()),
+                          );
+                        },
                       ),
                     ),
                     Container(width: 1, height: 20 * scale, color: const Color(0x55FFFFFF)),

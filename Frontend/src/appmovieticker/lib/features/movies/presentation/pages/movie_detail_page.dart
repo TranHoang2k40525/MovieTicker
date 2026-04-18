@@ -3,6 +3,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/movie_list_item.dart';
+import 'movie_showtime_page.dart';
 import '../widgets/movie_menu_dialog.dart';
 
 class MovieDetailPage extends StatefulWidget {
@@ -100,7 +101,9 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   }
 
   void _bookTicket() {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BookingPage()));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => MovieShowtimePage(movie: _movie)),
+    );
   }
 
   double _uiScale(BuildContext context) {
@@ -400,19 +403,6 @@ class _BookButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// Placeholder booking page - sẽ được implement sau
-class BookingPage extends StatelessWidget {
-  const BookingPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Đặt vé')),
-      body: const Center(child: Text('Booking page coming soon')),
     );
   }
 }

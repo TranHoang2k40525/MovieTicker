@@ -1,6 +1,8 @@
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/dio_client.dart';
 import '../models/movie_list_item.dart';
+import '../models/movie_showtime_item.dart';
+import '../models/cinema_showtime_item.dart';
 import '../models/nearby_cinema_item.dart';
 
 abstract class MoviesRemoteDataSource {
@@ -9,6 +11,13 @@ abstract class MoviesRemoteDataSource {
   Future<List<MovieListItem>> getSpecialMovies();
   Future<List<MovieListItem>> getShowingAndUpcomingMovies({int page, int sizePage});
   Future<List<NearbyCinemaItem>> getNearbyCinemas({required double latitude, required double longitude});
+  Future<List<CinemaShowtimeMovieItem>> getCinemaShowtimes({required int cinemaId, DateTime? filterDate});
+  Future<List<MovieShowtimeCinemaItem>> getMovieShowtimes({
+    required int movieId,
+    required double latitude,
+    required double longitude,
+    DateTime? filterDate,
+  });
   Future<MovieListItem> getMovieDetail({required int movieId});
 }
 
@@ -50,6 +59,40 @@ class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
     );
 
     return _parseList(response.data, NearbyCinemaItem.fromJson);
+  }
+
+  @override
+  Future<List<CinemaShowtimeMovieItem>> getCinemaShowtimes({required int cinemaId, DateTime? filterDate}) async {
+    final response = await dioClient.dio.get(
+      '/CinemaPub/$cinemaId/showtimes',
+      queryParameters: {
+        if (filterDate != null) 'filterDate': _formatDateOnly(filterDate),
+      },
+    );
+
+    return _parseList(response.data, CinemaShowtimeMovieItem.fromJson);
+  }
+
+  @override
+  Future<List<MovieShowtimeCinemaItem>> getMovieShowtimes({
+    required int movieId,
+    required double latitude,
+    required double longitude,
+    DateTime? filterDate,
+  }) async {
+    final response = await dioClient.dio.post(
+      ApiConstants.cinemaMovieShowtimes,
+      queryParameters: {
+        if (filterDate != null) 'filterDate': _formatDateOnly(filterDate),
+      },
+      data: {
+        'movieId': movieId,
+        'latitude': latitude,
+        'longitude': longitude,
+      },
+    );
+
+    return _parseList(response.data, MovieShowtimeCinemaItem.fromJson);
   }
 
   @override
@@ -98,5 +141,9 @@ class MoviesRemoteDataSourceImpl implements MoviesRemoteDataSource {
     }
 
     return const [];
+  }
+
+  String _formatDateOnly(DateTime date) {
+    return '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
