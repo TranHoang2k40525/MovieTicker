@@ -20,6 +20,10 @@ using MovieTicket.Application.Services.IServices.IMovie;
 using MovieTicket.Domain.IResponsitories.ICinema;
 using MovieTicket.Application.Services.Implementations.Cinema;
 using MovieTicket.Application.Services.IServices.ICinema;
+using MovieTicket.Domain.IResponsitories.IProduct;
+using MovieTicket.Infrastructure.Repositories.ProductRepository;
+using MovieTicket.Application.Services.IServices.IProduct;
+using MovieTicket.Application.Services.Implementations.Product;
 
 // Load .env file
 Env.Load();
@@ -67,6 +71,7 @@ builder.Services.AddScoped<ILoginHistoryRepository, LoginHistoryRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAccountRoleRepository, AccountRoleRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
 // Services
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
@@ -82,9 +87,10 @@ builder.Services.AddScoped<IMoviePubService, MoviePubService>();
 builder.Services.AddScoped<ICinemaRepository, CinemaRepository>();
 builder.Services.AddScoped<ICinemaShowtimeRepository, CinemaShowtimeRepository>();
 builder.Services.AddScoped<ICinemaPubService, CinemaPubService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
-// Background Tasks
-builder.Services.AddHostedService<AccountCleanupService>();
+    // Background Tasks
+    builder.Services.AddHostedService<AccountCleanupService>();
 
 // DbContext
 builder.Services.AddDbContext<AppMovieTickerDbContext>(options =>
