@@ -11,8 +11,6 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
 {
     public class CheckoutService : ICheckoutService
     {
-        private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
-
         private readonly IUserRepository _userRepository;
         private readonly ICheckoutRepository _checkoutRepository;
         private readonly ICheckoutEmailService _checkoutEmailService;
@@ -114,7 +112,7 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
 
             if (booking.Status == BookingStatus.confirmed && existingPayment != null)
             {
-                var existingPaidAt = existingPayment.PaymentDate ?? DateTime.UtcNow;
+                var existingPaidAt = EnsureUtc(existingPayment.PaymentDate) ?? DateTime.UtcNow;
                 return new MockMomoPaymentResponse
                 {
                     Success = true,
@@ -187,10 +185,10 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
                 await _checkoutEmailService.SendBookingSuccessEmailAsync(
                     user.Email!,
                     preview,
-                    payment.PaymentDate ?? DateTime.UtcNow);
+                    EnsureUtc(payment.PaymentDate) ?? DateTime.UtcNow);
             }
 
-            var finalizedPaidAt = payment.PaymentDate ?? DateTime.UtcNow;
+            var finalizedPaidAt = EnsureUtc(payment.PaymentDate) ?? DateTime.UtcNow;
             var ticketCode = $"MT-{booking.BookingId}-{finalizedPaidAt:yyyyMMddHHmmss}";
 
             return new MockMomoPaymentResponse
@@ -213,7 +211,7 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
                 return new List<VoucherViewDto>();
             }
 
-            var today = GetVietnamToday();
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var vouchers = await _checkoutRepository.GetAvailableVouchersAsync(today);
 
             var result = new List<VoucherViewDto>(vouchers.Count);
@@ -286,7 +284,7 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
             if (voucher.IsActive != true)
                 return (false, "Voucher không còn hiệu lực", 0m, string.Empty);
 
-            var today = GetVietnamToday();
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
             if (voucher.StartDate.HasValue && today < voucher.StartDate.Value)
                 return (false, "Voucher chưa đến thời gian áp dụng", 0m, string.Empty);
 
@@ -406,22 +404,25 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
                 $"Phim: {preview.MovieTitle}, suất: {preview.ShowTimeRangeLabel}, ghế: {string.Join(", ", preview.SeatNumbers)}.";
         }
 
-        private static DateOnly GetVietnamToday()
+        private static DateTime? EnsureUtc(DateTime? input)
         {
-            var vnNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTimeZone);
-            return DateOnly.FromDateTime(vnNow);
-        }
+            if (!input.HasValue)
+            {
+                return null;
+            }
 
-        private static TimeZoneInfo ResolveVietnamTimeZone()
-        {
-            try
+            var value = input.Value;
+            if (value.Kind == DateTimeKind.Utc)
             {
-                return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+                return value;
             }
-            catch (TimeZoneNotFoundException)
+
+            if (value.Kind == DateTimeKind.Unspecified)
             {
-                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+                return DateTime.SpecifyKind(value, DateTimeKind.Utc);
             }
+
+            return value.ToUniversalTime();
         }
 
     }

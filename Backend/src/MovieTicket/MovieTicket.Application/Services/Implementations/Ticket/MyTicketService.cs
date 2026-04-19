@@ -80,7 +80,7 @@ namespace MovieTicket.Application.Services.Implementations.Ticket
                     CinemaName = booking.Show?.Hall?.Cinema?.CinemaName ?? string.Empty,
                     ShowDate = booking.Show?.ShowDate,
                     ShowTime = booking.Show?.ShowTime?.ToString("HH:mm") ?? string.Empty,
-                    PaymentDate = payment?.PaymentDate,
+                    PaymentDate = EnsureUtc(payment?.PaymentDate),
                     PaymentMethod = payment?.PaymentMethod ?? string.Empty,
                     Amount = payment?.Amount ?? 0m,
                     IsExpired = isExpired,
@@ -173,7 +173,7 @@ namespace MovieTicket.Application.Services.Implementations.Ticket
                 var cinemaName = booking.Show?.Hall?.Cinema?.CinemaName ?? "Rạp";
                 var showDateLabel = booking.Show?.ShowDate?.ToString("yyyy-MM-dd") ?? "N/A";
                 var showTimeLabel = booking.Show?.ShowTime?.ToString("HH:mm") ?? "N/A";
-                var paidAt = payment?.PaymentDate?.ToUniversalTime() ?? now;
+                var paidAt = EnsureUtc(payment?.PaymentDate) ?? now;
                 var ticketCode = BuildTicketCode(booking.BookingId, payment?.PaymentId, payment?.PaymentDate);
 
                 notifications.Add(new UserNotificationItemDto
@@ -255,7 +255,28 @@ namespace MovieTicket.Application.Services.Implementations.Ticket
 
         private static string BuildStableTimestamp(DateTime? input)
         {
-            return input?.ToUniversalTime().ToString("yyyyMMddHHmmss") ?? "00000000000000";
+            return EnsureUtc(input)?.ToString("yyyyMMddHHmmss") ?? "00000000000000";
+        }
+
+        private static DateTime? EnsureUtc(DateTime? input)
+        {
+            if (!input.HasValue)
+            {
+                return null;
+            }
+
+            var value = input.Value;
+            if (value.Kind == DateTimeKind.Utc)
+            {
+                return value;
+            }
+
+            if (value.Kind == DateTimeKind.Unspecified)
+            {
+                return DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            }
+
+            return value.ToUniversalTime();
         }
 
         private static string BuildMovieImageUrl(string? imageUrl)
