@@ -57,6 +57,18 @@ namespace MovieTicket.Application.DTOs.Ticket
         public string StatusLabel { get; set; } = string.Empty;
     }
 
+    public class UserNotificationItemDto
+    {
+        public string NotificationId { get; set; } = string.Empty;
+        public int? BookingId { get; set; }
+        public string Channel { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public bool IsRead { get; set; }
+    }
+
     public class TicketSeatDto
     {
         public string SeatNumber { get; set; } = string.Empty;

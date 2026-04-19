@@ -11,6 +11,8 @@ namespace MovieTicket.Application.Services.Implementations.Cinema
 {
     public class CinemaPubService : ICinemaPubService
     {
+        private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
+
         private readonly ICinemaRepository _cinemaRepository;
         private readonly ICinemaShowtimeRepository _showtimeRepository;
         private readonly ILogger<CinemaPubService> _logger;
@@ -53,7 +55,7 @@ namespace MovieTicket.Application.Services.Implementations.Cinema
         {
             try
             {
-                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                var today = GetVietnamToday();
                 var fromDate = filterDate ?? today;
 
                 // Quy tắc: tối đa xem trước 30 ngày
@@ -115,7 +117,7 @@ namespace MovieTicket.Application.Services.Implementations.Cinema
         {
             try
             {
-                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                var today = GetVietnamToday();
                 var fromDate = filterDate ?? today;
 
                 // Quy tắc: tối đa xem trước 30 ngày
@@ -191,6 +193,24 @@ namespace MovieTicket.Application.Services.Implementations.Cinema
         private double Deg2Rad(double deg)
         {
             return deg * (Math.PI / 180);
+        }
+
+        private static DateOnly GetVietnamToday()
+        {
+            var vnNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTimeZone);
+            return DateOnly.FromDateTime(vnNow);
+        }
+
+        private static TimeZoneInfo ResolveVietnamTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+            }
         }
     }
 }

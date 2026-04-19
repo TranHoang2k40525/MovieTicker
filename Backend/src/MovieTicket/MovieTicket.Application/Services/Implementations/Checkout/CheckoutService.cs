@@ -11,6 +11,8 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
 {
     public class CheckoutService : ICheckoutService
     {
+        private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
+
         private readonly IUserRepository _userRepository;
         private readonly ICheckoutRepository _checkoutRepository;
         private readonly ICheckoutEmailService _checkoutEmailService;
@@ -211,7 +213,7 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
                 return new List<VoucherViewDto>();
             }
 
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = GetVietnamToday();
             var vouchers = await _checkoutRepository.GetAvailableVouchersAsync(today);
 
             var result = new List<VoucherViewDto>(vouchers.Count);
@@ -284,7 +286,7 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
             if (voucher.IsActive != true)
                 return (false, "Voucher không còn hiệu lực", 0m, string.Empty);
 
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = GetVietnamToday();
             if (voucher.StartDate.HasValue && today < voucher.StartDate.Value)
                 return (false, "Voucher chưa đến thời gian áp dụng", 0m, string.Empty);
 
@@ -402,6 +404,24 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
                 $"Bạn đã đặt vé thành công tại {preview.CinemaName}. " +
                 $"Thời gian đặt vé: {now:dd-MM-yyyy HH:mm}. " +
                 $"Phim: {preview.MovieTitle}, suất: {preview.ShowTimeRangeLabel}, ghế: {string.Join(", ", preview.SeatNumbers)}.";
+        }
+
+        private static DateOnly GetVietnamToday()
+        {
+            var vnNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTimeZone);
+            return DateOnly.FromDateTime(vnNow);
+        }
+
+        private static TimeZoneInfo ResolveVietnamTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+            }
         }
 
     }

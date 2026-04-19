@@ -10,6 +10,7 @@ namespace MovieTicket.Application.Services.Implementations.Ticket
     public class MyTicketService : IMyTicketService
     {
         private const decimal DefaultVatRate = 0.05m;
+        private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
 
         private readonly IUserRepository _userRepository;
         private readonly ITicketRepository _ticketRepository;
@@ -151,6 +152,78 @@ namespace MovieTicket.Application.Services.Implementations.Ticket
             };
         }
 
+        public async Task<List<UserNotificationItemDto>> GetMyNotificationsAsync(int accountId)
+        {
+            var user = await _userRepository.GetByAccountIdAsync(accountId);
+            if (user == null)
+            {
+                return new List<UserNotificationItemDto>();
+            }
+
+            var bookings = await _ticketRepository.GetTicketHistoryByUserAsync(user.UserId);
+            var now = DateTime.UtcNow;
+            var upcomingThreshold = now.AddHours(24);
+            var notifications = new List<UserNotificationItemDto>();
+
+            foreach (var booking in bookings)
+            {
+                var payment = booking.Payments.OrderByDescending(x => x.PaymentDate).FirstOrDefault();
+                var showDateTime = BuildShowDateTime(booking.Show?.ShowDate, booking.Show?.ShowTime);
+                var movieTitle = booking.Show?.Movie?.MovieTitle ?? "Phim";
+                var cinemaName = booking.Show?.Hall?.Cinema?.CinemaName ?? "Rạp";
+                var showDateLabel = booking.Show?.ShowDate?.ToString("yyyy-MM-dd") ?? "N/A";
+                var showTimeLabel = booking.Show?.ShowTime?.ToString("HH:mm") ?? "N/A";
+                var paidAt = payment?.PaymentDate?.ToUniversalTime() ?? now;
+                var ticketCode = BuildTicketCode(booking.BookingId, payment?.PaymentId, payment?.PaymentDate);
+
+                notifications.Add(new UserNotificationItemDto
+                {
+                    NotificationId = $"booking-success-{booking.BookingId}-{payment?.PaymentId ?? 0}",
+                    BookingId = booking.BookingId,
+                    Channel = "inbox",
+                    Type = "booking_success",
+                    Title = "Đặt vé thành công",
+                    Message = $"Bạn đã đặt thành công vé {ticketCode} cho phim {movieTitle} tại {cinemaName}.",
+                    CreatedAt = paidAt,
+                    IsRead = false
+                });
+
+                if (showDateTime.HasValue && showDateTime.Value > now && showDateTime.Value <= upcomingThreshold)
+                {
+                    notifications.Add(new UserNotificationItemDto
+                    {
+                        NotificationId = $"showtime-reminder-{booking.BookingId}-{payment?.PaymentId ?? 0}",
+                        BookingId = booking.BookingId,
+                        Channel = "notification",
+                        Type = "showtime_reminder",
+                        Title = "Suất chiếu sắp diễn ra",
+                        Message = $"{movieTitle} sẽ chiếu lúc {showTimeLabel} ngày {showDateLabel}. Vui lòng đến sớm 15 phút.",
+                        CreatedAt = showDateTime.Value.AddHours(-2),
+                        IsRead = false
+                    });
+                }
+
+                if (showDateTime.HasValue && showDateTime.Value <= now)
+                {
+                    notifications.Add(new UserNotificationItemDto
+                    {
+                        NotificationId = $"ticket-used-{booking.BookingId}-{payment?.PaymentId ?? 0}",
+                        BookingId = booking.BookingId,
+                        Channel = "notification",
+                        Type = "ticket_used",
+                        Title = "Thông tin vé đã cập nhật",
+                        Message = $"Vé {ticketCode} của phim {movieTitle} đã được chuyển trạng thái đã sử dụng/hết hạn.",
+                        CreatedAt = showDateTime.Value.AddHours(1),
+                        IsRead = false
+                    });
+                }
+            }
+
+            return notifications
+                .OrderByDescending(x => x.CreatedAt)
+                .ToList();
+        }
+
         private static DateTime? BuildShowDateTime(DateOnly? showDate, TimeOnly? showTime)
         {
             if (!showDate.HasValue || !showTime.HasValue)
@@ -158,8 +231,8 @@ namespace MovieTicket.Application.Services.Implementations.Ticket
                 return null;
             }
 
-            var date = showDate.Value.ToDateTime(showTime.Value, DateTimeKind.Local);
-            return date.ToUniversalTime();
+            var localVietnamTime = showDate.Value.ToDateTime(showTime.Value, DateTimeKind.Unspecified);
+            return TimeZoneInfo.ConvertTimeToUtc(localVietnamTime, VietnamTimeZone);
         }
 
         private static string BuildTicketCode(int bookingId, int? paymentId, DateTime? paidAt)
@@ -202,6 +275,18 @@ namespace MovieTicket.Application.Services.Implementations.Ticket
                 SeatType.Couple => "Sweet Box",
                 _ => "Thường"
             };
+        }
+
+        private static TimeZoneInfo ResolveVietnamTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/network/dio_client.dart';
 import '../../features/movies/data/datasources/movies_remote_datasource.dart';
+import '../../features/movies/data/datasources/notification_remote_datasource.dart';
 import '../../features/movies/data/datasources/payment_remote_datasource.dart';
 import '../../features/movies/data/datasources/ticket_remote_datasource.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
@@ -38,6 +39,9 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<TicketRemoteDataSource>(
     () => TicketRemoteDataSourceImpl(dioClient: sl()),
+  );
+  sl.registerLazySingleton<NotificationRemoteDataSource>(
+    () => NotificationRemoteDataSourceImpl(dioClient: sl()),
   );
 
   // Repository

@@ -7,5 +7,6 @@ namespace MovieTicket.Application.Services.IServices.ITicket
         Task<List<MyTicketItemDto>> GetMyTicketsAsync(int accountId);
         Task<MyTicketDetailDto?> GetMyTicketDetailAsync(int accountId, int bookingId);
         Task<List<MyTicketHistoryItemDto>> GetMyTicketHistoryAsync(int accountId);
+        Task<List<UserNotificationItemDto>> GetMyNotificationsAsync(int accountId);
     }
 }

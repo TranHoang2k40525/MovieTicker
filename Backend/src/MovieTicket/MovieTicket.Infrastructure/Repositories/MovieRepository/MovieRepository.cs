@@ -12,6 +12,8 @@ namespace MovieTicket.Infrastructure.Repositories.MovieRespository
 {
     public class MovieRepository : IMovieRepository
     {
+        private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
+
         private readonly AppMovieTickerDbContext _context;
         public MovieRepository(AppMovieTickerDbContext context)
         {
@@ -32,7 +34,7 @@ namespace MovieTicket.Infrastructure.Repositories.MovieRespository
         // lay danh sach phim theo rap
         public async Task<IEnumerable<Movie>> GetMovieByCinemaAsync(int cinemaID, int page, int sizePage)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = GetVietnamToday();
 
             return await _context.Movies
                 .AsNoTracking()
@@ -45,7 +47,7 @@ namespace MovieTicket.Infrastructure.Repositories.MovieRespository
         //Lay phim dang chieu trong ngay
         public async Task<List<IEnumerable<Movie>>> GetMovieOnDayAsync()
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = GetVietnamToday();
 
             var movies = await _context.Movies
                 .AsNoTracking()
@@ -71,7 +73,7 @@ namespace MovieTicket.Infrastructure.Repositories.MovieRespository
         //Lay phim sap chieu
         public async Task<IEnumerable<Movie>> GetUpComingMovieAsync()
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = GetVietnamToday();
 
             return await _context.Movies
                 .AsNoTracking()
@@ -84,7 +86,7 @@ namespace MovieTicket.Infrastructure.Repositories.MovieRespository
         //Lay danh sach phim dang chieu va sap chieu
         public async Task<IEnumerable<Movie>> GetMovieOnDayAndUpComingMovieAsync(int page, int sizePage)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = GetVietnamToday();
 
             return await _context.Movies
                 .AsNoTracking()
@@ -160,6 +162,24 @@ namespace MovieTicket.Infrastructure.Repositories.MovieRespository
             }
 
             return await _context.SaveChangesAsync() > 0;
+        }
+
+        private static DateOnly GetVietnamToday()
+        {
+            var vnNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTimeZone);
+            return DateOnly.FromDateTime(vnNow);
+        }
+
+        private static TimeZoneInfo ResolveVietnamTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+            }
         }
     }
 }

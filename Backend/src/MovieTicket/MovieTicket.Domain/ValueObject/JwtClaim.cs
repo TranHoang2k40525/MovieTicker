@@ -13,7 +13,7 @@ namespace MovieTicket.Domain.ValueObject
         public List<string> Role { get; set; } = new List<string>();
         public List<string> Permissions { get; set; } = new List<string>();
         // thoi gian token duoc tao ra
-        public DateTime IssuedAt { get; set; } = DateTime.Now;
+        public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
         // thoi gian token het han  
         public DateTime ExpiresAt { get; set; }
 

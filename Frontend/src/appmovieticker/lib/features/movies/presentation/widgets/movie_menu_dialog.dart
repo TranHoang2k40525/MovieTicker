@@ -7,6 +7,8 @@ import '../../../../core/di/injection_container.dart' as di;
 import '../pages/cinema_booking_list_page.dart';
 import '../pages/nearby_cinemas_page.dart';
 import '../pages/my_tickets_page.dart';
+import '../pages/notifications_page.dart';
+import '../pages/store_catalog_page.dart';
 import '../pages/movie_booking_list_page.dart';
 
 Future<void> showMovieMenuDialog(
@@ -53,18 +55,49 @@ Future<void> showMovieMenuDialog(
             ),
             child: Column(
               children: [
-                SizedBox(
-                  width: 70 * scale,
-                  height: 70 * scale,
-                  child: ClipOval(
-                    child: hasAvatarUrl
-                        ? Image.network(
-                            safeAvatarUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, st) => Image.asset(fallbackAvatar, fit: BoxFit.cover),
-                          )
-                        : Image.asset(fallbackAvatar, fit: BoxFit.cover),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 70 * scale,
+                      height: 70 * scale,
+                      child: ClipOval(
+                        child: hasAvatarUrl
+                            ? Image.network(
+                                safeAvatarUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, err, st) => Image.asset(fallbackAvatar, fit: BoxFit.cover),
+                              )
+                            : Image.asset(fallbackAvatar, fit: BoxFit.cover),
+                      ),
+                    ),
+                    if (isLoggedIn) ...[
+                      SizedBox(width: 8 * scale),
+                      InkWell(
+                        onTap: () {
+                          Navigator.of(dialogContext).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const NotificationsPage()),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(999),
+                        child: Container(
+                          width: 34 * scale,
+                          height: 34 * scale,
+                          decoration: BoxDecoration(
+                            color: const Color(0x30FFFFFF),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: const Color(0x66FFFFFF)),
+                          ),
+                          child: Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.white,
+                            size: 18 * scale,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 SizedBox(height: 8 * scale),
                 if (isLoggedIn) ...[
@@ -208,13 +241,27 @@ Future<void> showMovieMenuDialog(
                         scale: scale,
                         onTap: () {
                           Navigator.of(dialogContext).pop();
+                          if (!isLoggedIn) {
+                            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginPage()));
+                            return;
+                          }
                           Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const MyTicketsPage()),
                           );
                         },
                       ),
                       _MenuIconItem(icon: Icons.redeem_outlined, label: 'Đổi ưu đãi', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
-                      _MenuIconItem(icon: Icons.store_outlined, label: 'Store', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
+                      _MenuIconItem(
+                        icon: Icons.store_outlined,
+                        label: 'Store',
+                        scale: scale,
+                        onTap: () {
+                          Navigator.of(dialogContext).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const StoreCatalogPage()),
+                          );
+                        },
+                      ),
                       const SizedBox.shrink(),
                       const SizedBox.shrink(),
                     ],

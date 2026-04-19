@@ -4,9 +4,11 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/di/injection_container.dart' as di;
+import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/movie_list_item.dart';
 import 'nearby_cinemas_page.dart';
+import 'notifications_page.dart';
 import 'movie_detail_page.dart';
 import '../widgets/movie_menu_dialog.dart';
 
@@ -22,9 +24,11 @@ class MoviesPage extends StatefulWidget {
 class _MoviesPageState extends State<MoviesPage> {
   static const int _batchSize = 5;
   final MoviesRemoteDataSource _remoteDataSource = di.sl<MoviesRemoteDataSource>();
+  final AuthLocalDataSource _localDataSource = di.sl<AuthLocalDataSource>();
 
   bool _loading = true;
   String? _error;
+  bool _isLoggedIn = false;
   _MovieTab _selectedTab = _MovieTab.nowShowing;
 
   List<MovieListItem> _nowShowing = const [];
@@ -43,9 +47,18 @@ class _MoviesPageState extends State<MoviesPage> {
   @override
   void initState() {
     super.initState();
+    _loadAuthState();
     _loadMovies();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _promptEnableLocationIfNeeded();
+    });
+  }
+
+  Future<void> _loadAuthState() async {
+    final token = await _localDataSource.getToken();
+    if (!mounted) return;
+    setState(() {
+      _isLoggedIn = token != null && token.isNotEmpty;
     });
   }
 
@@ -216,6 +229,8 @@ class _MoviesPageState extends State<MoviesPage> {
               children: [
                 _TopHeader(
                   scale: scale,
+                  isLoggedIn: _isLoggedIn,
+                  onNotificationTap: _openNotifications,
                   onMenuTap: _openMenu,
                 ),
                 _TopTabs(
@@ -267,13 +282,30 @@ class _MoviesPageState extends State<MoviesPage> {
       context,
       scale: _uiScale(context),
     );
+    await _loadAuthState();
+  }
+
+  Future<void> _openNotifications() async {
+    if (!_isLoggedIn) {
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const NotificationsPage()),
+    );
   }
 }
 
 class _TopHeader extends StatelessWidget {
-  const _TopHeader({required this.scale, required this.onMenuTap});
+  const _TopHeader({
+    required this.scale,
+    required this.isLoggedIn,
+    required this.onNotificationTap,
+    required this.onMenuTap,
+  });
 
   final double scale;
+  final bool isLoggedIn;
+  final VoidCallback onNotificationTap;
   final VoidCallback onMenuTap;
 
   @override
@@ -296,6 +328,16 @@ class _TopHeader extends StatelessWidget {
               ),
             ),
           ),
+          if (isLoggedIn)
+            IconButton(
+              onPressed: onNotificationTap,
+              icon: Icon(
+                Icons.notifications_outlined,
+                color: const Color(0xFFE04A4A),
+                size: 24 * scale,
+              ),
+              tooltip: 'Thông báo',
+            ),
           Expanded(
             child: Center(
               child: Text(
