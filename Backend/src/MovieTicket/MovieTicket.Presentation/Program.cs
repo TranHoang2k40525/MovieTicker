@@ -10,11 +10,13 @@ using MovieTicket.Application.Services.Implementations.Booking;
 using MovieTicket.Application.Services.Implementations.Checkout;
 using MovieTicket.Application.Services.Implementations.Cinema;
 using MovieTicket.Application.Services.Implementations.Movie;
+using MovieTicket.Application.Services.Implementations.Payment;
 using MovieTicket.Application.Services.Implementations.Product;
 using MovieTicket.Application.Services.IServices.IBooking;
 using MovieTicket.Application.Services.IServices.ICheckout;
 using MovieTicket.Application.Services.IServices.ICinema;
 using MovieTicket.Application.Services.IServices.IMovie;
+using MovieTicket.Application.Services.IServices.IPayment;
 using MovieTicket.Application.Services.IServices.IProduct;
 using MovieTicket.Domain.IReponsitories.IMovie;
 using MovieTicket.Domain.IResponsitories.IAuth;
@@ -105,6 +107,7 @@ try
     builder.Services.AddScoped<IBookingFlowService, BookingFlowService>();
     builder.Services.AddScoped<ICheckoutService, CheckoutService>();
     builder.Services.AddScoped<ICheckoutEmailService, CheckoutEmailService>();
+    builder.Services.AddScoped<IPaymentService, PaymentService>();
     // Background Tasks
     builder.Services.AddHostedService<AccountCleanupService>();
     builder.Services.AddHostedService<BookingHoldCleanupService>();

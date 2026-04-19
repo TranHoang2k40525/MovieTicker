@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
@@ -17,6 +18,7 @@ class SeatMapPage extends StatefulWidget {
     super.key,
     required this.showId,
     required this.movieTitle,
+    this.moviePosterUrl,
     required this.cinemaName,
     required this.cinemaAddress,
     required this.hallName,
@@ -30,6 +32,7 @@ class SeatMapPage extends StatefulWidget {
 
   final int showId;
   final String movieTitle;
+  final String? moviePosterUrl;
   final String cinemaName;
   final String cinemaAddress;
   final String hallName;
@@ -50,6 +53,7 @@ class _SeatMapPageState extends State<SeatMapPage> {
   final DioClient _dioClient = di.sl<DioClient>();
   final TransformationController _transformController = TransformationController();
   final Set<int> _selectedSeatIds = <int>{};
+  Timer? _autoRefreshTimer;
 
   SeatMapResponseItem? _seatMap;
   bool _loading = true;
@@ -64,21 +68,37 @@ class _SeatMapPageState extends State<SeatMapPage> {
       if (mounted) setState(() {});
     });
     _loadSeatMap();
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    _autoRefreshTimer?.cancel();
     _transformController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadSeatMap() async {
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (!mounted || _loading) {
+        return;
+      }
+      _loadSeatMap(silent: true);
+    });
+  }
+
+  Future<void> _loadSeatMap({bool silent = false}) async {
     final token = await _localDataSource.getToken();
     _hasPersistedToken = token != null && token.isNotEmpty;
 
     setState(() {
-      _loading = true;
-      _message = null;
+      if (!silent) {
+        _loading = true;
+      }
+      if (!silent) {
+        _message = null;
+      }
     });
 
     try {
@@ -86,6 +106,7 @@ class _SeatMapPageState extends State<SeatMapPage> {
       if (!mounted) return;
       setState(() {
         _seatMap = seatMap;
+        _syncSelectedSeatsWithLatestMap(seatMap);
         _message = seatMap.rows.isEmpty ? 'Không có sơ đồ ghế cho suất chiếu này.' : null;
       });
     } on DioException catch (e) {
@@ -101,7 +122,7 @@ class _SeatMapPageState extends State<SeatMapPage> {
         if (!mounted) return;
         _requestedLogin = false;
         if (loggedIn == true) {
-          await _loadSeatMap();
+          await _loadSeatMap(silent: silent);
           return;
         }
       }
@@ -121,9 +142,24 @@ class _SeatMapPageState extends State<SeatMapPage> {
     } finally {
       if (!mounted) return;
       setState(() {
-        _loading = false;
+        if (!silent) {
+          _loading = false;
+        }
       });
     }
+  }
+
+  void _syncSelectedSeatsWithLatestMap(SeatMapResponseItem seatMap) {
+    final latestSelectableSeatIds = <int>{};
+    for (final row in seatMap.rows) {
+      for (final cell in row.cells) {
+        if (cell.seatId != null && cell.selectable) {
+          latestSelectableSeatIds.add(cell.seatId!);
+        }
+      }
+    }
+
+    _selectedSeatIds.removeWhere((seatId) => !latestSelectableSeatIds.contains(seatId));
   }
 
   Future<bool?> _openLogin() async {
@@ -169,6 +205,7 @@ class _SeatMapPageState extends State<SeatMapPage> {
                   scale: scale,
                   title: widget.movieTitle,
                   onBack: () => Navigator.of(context).maybePop(),
+                  onRefresh: () => _loadSeatMap(),
                 ),
                 _buildTopInfo(scale, seatMap),
                 Expanded(
@@ -459,10 +496,11 @@ class _SeatMapPageState extends State<SeatMapPage> {
           return 'N/A';
         }).toList();
 
-        Navigator.of(context).push(
+        final flowResult = await Navigator.of(context).push<dynamic>(
           MaterialPageRoute(
             builder: (_) => ComboSelectionPage(
               movieTitle: widget.movieTitle,
+              moviePosterUrl: widget.moviePosterUrl,
               cinemaName: widget.cinemaName,
               cinemaAddress: widget.cinemaAddress,
               holdId: holdId,
@@ -473,6 +511,17 @@ class _SeatMapPageState extends State<SeatMapPage> {
             ),
           ),
         );
+
+        if (!mounted) return;
+        if (flowResult == 'hold_expired') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Hết thời gian giữ ghế. Vui lòng chọn lại suất chiếu.')),
+          );
+          Navigator.of(context).pop();
+          return;
+        }
+
+        await _loadSeatMap();
       }
     } on DioException catch (e) {
       if (!mounted) return;
@@ -806,7 +855,11 @@ Color _seatColor(SeatMapCellItem cell, bool isSelected) {
     case 'booked':
       return const Color(0xFFA46F62);
     case 'held':
-      return const Color(0xFFB3A06B);
+      return const Color(0xFFF7D54A);
+    case 'holding':
+      return const Color(0xFFF7D54A);
+    case 'held_by_other':
+      return const Color(0xFFF7D54A);
     default:
       if (cell.isCoupleSeat) return const Color(0xFFD81CBF);
       if (cell.seatClass == 'VIP') return const Color(0xFFF31818);
@@ -817,6 +870,7 @@ Color _seatColor(SeatMapCellItem cell, bool isSelected) {
 Color _foregroundColor(SeatMapCellItem cell, bool isSelected) {
   if (isSelected) return Colors.white;
   if (cell.state == 'booked') return Colors.white;
+  if (cell.state == 'held' || cell.state == 'holding' || cell.state == 'held_by_other') return Colors.black;
   if (cell.seatClass == 'VIP' || cell.isCoupleSeat) return Colors.white;
   return Colors.black;
 }
@@ -869,6 +923,7 @@ class _LegendRow extends StatelessWidget {
         ? legend
         : const [
             SeatLegendItem(key: 'booked', label: 'Đã đặt'),
+            SeatLegendItem(key: 'held', label: 'Đang tạm giữ'),
             SeatLegendItem(key: 'selected', label: 'Đang chọn'),
             SeatLegendItem(key: 'VIP', label: 'VIP'),
             SeatLegendItem(key: 'THUONG', label: 'Thường'),
@@ -902,6 +957,12 @@ Color _legendColor(String key) {
   switch (key) {
     case 'booked':
       return const Color(0xFFA46F62);
+    case 'held':
+      return const Color(0xFFF7D54A);
+    case 'holding':
+      return const Color(0xFFF7D54A);
+    case 'held_by_other':
+      return const Color(0xFFF7D54A);
     case 'selected':
       return const Color(0xFF163FCC);
     case 'VIP':
@@ -979,11 +1040,12 @@ class _BottomBar extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.scale, required this.title, required this.onBack});
+  const _Header({required this.scale, required this.title, required this.onBack, required this.onRefresh});
 
   final double scale;
   final String title;
   final VoidCallback onBack;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
@@ -1004,7 +1066,11 @@ class _Header extends StatelessWidget {
               style: TextStyle(fontSize: 16 * scale, fontWeight: FontWeight.w700, fontStyle: FontStyle.italic),
             ),
           ),
-          const SizedBox(width: 16),
+          IconButton(
+            onPressed: onRefresh,
+            icon: Icon(Icons.refresh_rounded, size: 24 * scale, color: const Color(0xFF1D4ED8)),
+            tooltip: 'Tải lại sơ đồ ghế',
+          ),
         ],
       ),
     );

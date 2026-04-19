@@ -3,6 +3,7 @@ using MovieTicket.Application.DTOs.Checkout;
 using MovieTicket.Application.Services.IServices.ICheckout;
 using MovieTicket.Domain.Entities;
 using BookingEntity = MovieTicket.Domain.Entities.Booking;
+using PaymentEntity = MovieTicket.Domain.Entities.Payment;
 using MovieTicket.Domain.IResponsitories.IAuth;
 using MovieTicket.Domain.IResponsitories.ICheckout;
 
@@ -141,7 +142,7 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
                 seat.HoldUntil = null;
             }
 
-            var payment = new Payment
+            var payment = new PaymentEntity
             {
                 BookingId = booking.BookingId,
                 Amount = preview.GrandTotal,

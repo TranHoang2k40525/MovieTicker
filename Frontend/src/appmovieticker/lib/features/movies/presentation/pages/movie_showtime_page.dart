@@ -510,6 +510,7 @@ class _ShowtimeGroup extends StatelessWidget {
                         builder: (_) => SeatMapPage(
                           showId: showtime.showId,
                           movieTitle: movie.movieTitle,
+                          moviePosterUrl: movie.imageUrl,
                           movieRuntime: movie.movieRuntime,
                           movieAge: movie.movieAge,
                           movieGenre: movie.movieGenre,

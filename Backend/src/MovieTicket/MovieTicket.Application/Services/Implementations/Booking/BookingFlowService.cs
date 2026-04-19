@@ -298,19 +298,58 @@ namespace MovieTicket.Application.Services.Implementations.Booking
 
                 if (seat.SeatType == SeatType.Couple)
                 {
-                    if (!seat.PairId.HasValue ||
-                        !seatsById.TryGetValue(seat.PairId.Value, out var pairSeat) ||
-                        pairSeat.SeatType != SeatType.Couple ||
-                        pairSeat.PairId != seat.SeatId)
+                    if (!TryResolveCouplePairSeat(seat, seatsById, out var pairSeat))
                     {
                         throw new InvalidOperationException($"Ghế đôi {seatId} cấu hình cặp không hợp lệ");
                     }
 
-                    normalized.Add(pairSeat.SeatId);
+                    normalized.Add(pairSeat!.SeatId);
                 }
             }
 
             return normalized.ToList();
+        }
+
+        private static bool TryResolveCouplePairSeat(
+            CinemaHallSeat seat,
+            IDictionary<int, CinemaHallSeat> seatsById,
+            out CinemaHallSeat? pairSeat)
+        {
+            pairSeat = null;
+
+            // Ưu tiên cấu hình PairId nếu có và hợp lệ.
+            if (seat.PairId.HasValue &&
+                seatsById.TryGetValue(seat.PairId.Value, out var configuredPair) &&
+                configuredPair.SeatType == SeatType.Couple)
+            {
+                pairSeat = configuredPair;
+                return true;
+            }
+
+            // Fallback cho dữ liệu import một chiều: suy luận ghế liền kề cùng hàng.
+            if (seat.ColSeat.HasValue && !string.IsNullOrWhiteSpace(seat.RowSeat))
+            {
+                var currentCol = seat.ColSeat.Value;
+                var currentRow = seat.RowSeat.Trim();
+
+                pairSeat = seatsById.Values
+                    .Where(s =>
+                        s.SeatId != seat.SeatId &&
+                        s.SeatType == SeatType.Couple &&
+                        s.ColSeat.HasValue &&
+                        !string.IsNullOrWhiteSpace(s.RowSeat) &&
+                        string.Equals(s.RowSeat!.Trim(), currentRow, StringComparison.OrdinalIgnoreCase) &&
+                        Math.Abs(s.ColSeat!.Value - currentCol) == 1)
+                    .OrderBy(s => Math.Abs(s.ColSeat!.Value - currentCol))
+                    .FirstOrDefault();
+
+                if (pairSeat != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool IsSeatBlocked(int seatId, IEnumerable<BookingSeat> bookingSeats, DateTime utcNow)

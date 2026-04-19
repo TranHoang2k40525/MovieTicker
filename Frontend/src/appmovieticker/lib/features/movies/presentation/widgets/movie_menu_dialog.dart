@@ -4,6 +4,7 @@ import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../../auth/presentation/pages/register_page.dart';
 import '../../../../core/di/injection_container.dart' as di;
+import '../pages/cinema_booking_list_page.dart';
 import '../pages/nearby_cinemas_page.dart';
 import '../pages/movie_booking_list_page.dart';
 
@@ -150,7 +151,7 @@ Future<void> showMovieMenuDialog(
                         onTap: () {
                           Navigator.of(dialogContext).pop();
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const NearbyCinemasPage()),
+                            MaterialPageRoute(builder: (_) => const CinemaBookingListPage()),
                           );
                         },
                       ),

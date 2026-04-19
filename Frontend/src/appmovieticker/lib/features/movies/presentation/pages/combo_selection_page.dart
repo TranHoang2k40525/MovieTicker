@@ -7,11 +7,13 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/product_item.dart';
+import 'checkout_payment_page.dart';
 
 class ComboSelectionPage extends StatefulWidget {
   const ComboSelectionPage({
     super.key,
     required this.movieTitle,
+    this.moviePosterUrl,
     required this.cinemaName,
     required this.cinemaAddress,
     required this.holdId,
@@ -22,6 +24,7 @@ class ComboSelectionPage extends StatefulWidget {
   });
 
   final String movieTitle;
+  final String? moviePosterUrl;
   final String cinemaName;
   final String cinemaAddress;
   final int holdId;
@@ -45,6 +48,7 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
   String? _error;
   late DateTime _expirationTime;
   bool _isSubmitting = false;
+  bool _holdExpiredHandled = false;
 
   @override
   void initState() {
@@ -68,6 +72,11 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
   }
 
   void _showExpiredDialog() {
+    if (_holdExpiredHandled) {
+      return;
+    }
+    _holdExpiredHandled = true;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -78,7 +87,7 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              Navigator.of(context).pop();
+              Navigator.of(context).pop('hold_expired');
             },
             child: const Text('OK'),
           ),
@@ -147,28 +156,16 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
   }
 
   Future<void> _confirmBooking() async {
-    final scale = _uiScale(context);
-    
     final selectedProducts = _selectedQuantities.entries
         .where((e) => e.value > 0)
         .map((e) => {'productId': e.key, 'quantity': e.value})
         .toList();
 
-    if (selectedProducts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Vui lòng chọn ít nhất một combo', style: TextStyle(fontSize: 12 * scale)),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Xác nhận đặt vé'),
-        content: const Text('Bạn chắc chắn muốn xác nhận đặt vé này?'),
+        title: const Text('Tiếp tục thanh toán'),
+        content: const Text('Xác nhận combo để sang màn thanh toán?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -177,19 +174,21 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              _proceedToConfirm(selectedProducts);
+              _proceedToCheckout(selectedProducts);
             },
-            child: const Text('Xác nhận'),
+            child: const Text('Tiếp tục'),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _proceedToConfirm(List<Map<String, int>> products) async {
+  Future<void> _proceedToCheckout(List<Map<String, int>> products) async {
     setState(() {
       _isSubmitting = true;
     });
+
+    var loadingDialogShown = false;
 
     try {
       final token = await _localDataSource.getToken();
@@ -218,6 +217,7 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
           ),
         ),
       );
+      loadingDialogShown = true;
 
       // Call backend API to confirm booking
       final response = await _dioClient.dio.post(
@@ -232,7 +232,10 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pop(); // Close loading dialog
+      if (loadingDialogShown) {
+        Navigator.of(context).pop();
+        loadingDialogShown = false;
+      }
 
       final responseData = response.data;
       final success = responseData['success'] ?? false;
@@ -250,21 +253,52 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✓ Đặt vé thành công!')),
+      final result = await Navigator.of(context).push<dynamic>(
+        MaterialPageRoute(
+          builder: (_) => CheckoutPaymentPage(
+            holdId: widget.holdId,
+            expiresAt: _expirationTime,
+            movieTitle: widget.movieTitle,
+            moviePosterUrl: widget.moviePosterUrl,
+            cinemaName: widget.cinemaName,
+            cinemaAddress: widget.cinemaAddress,
+            selectedSeats: widget.selectedSeats,
+            selectedSeatTotalPrice: widget.selectedSeatTotalPrice,
+            products: _products,
+            initialQuantities: _selectedQuantities,
+          ),
+        ),
       );
 
-      await Future.delayed(const Duration(milliseconds: 700));
       if (!mounted) return;
-      
-      Navigator.of(context).pop();
-      Navigator.of(context).pop(); // Return from seat map as well
-    } on DioException catch (e) {
-      if (!mounted) return;
+
+      if (result == true) {
+        Navigator.of(context).pop(true);
+        return;
+      }
+
+      if (result == 'hold_expired') {
+        Navigator.of(context).pop('hold_expired');
+        return;
+      }
+
       setState(() {
         _isSubmitting = false;
       });
-      Navigator.of(context).pop();
+    } on DioException catch (e) {
+      if (!mounted) return;
+      if (loadingDialogShown) {
+        Navigator.of(context).pop();
+        loadingDialogShown = false;
+      }
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      if (_isHoldExpiredError(e)) {
+        _showExpiredDialog();
+        return;
+      }
       
       final errorMsg = _parseErrorMessageFromDio(e) ?? 'Không thể xác nhận đặt vé. Vui lòng thử lại.';
       ScaffoldMessenger.of(context).showSnackBar(
@@ -272,15 +306,28 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       );
     } catch (e) {
       if (!mounted) return;
+      if (loadingDialogShown) {
+        Navigator.of(context).pop();
+        loadingDialogShown = false;
+      }
       setState(() {
         _isSubmitting = false;
       });
-      Navigator.of(context).pop();
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Lỗi: $e')),
       );
     }
+  }
+
+  bool _isHoldExpiredError(DioException exception) {
+    final status = exception.response?.statusCode ?? 0;
+    if (status == 408 || status == 409 || status == 410) {
+      return true;
+    }
+
+    final msg = (_parseErrorMessageFromDio(exception) ?? '').toLowerCase();
+    return msg.contains('hết hạn') || msg.contains('het han') || msg.contains('expired') || msg.contains('hold');
   }
 
   String? _parseErrorMessageFromDio(DioException exception) {
