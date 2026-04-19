@@ -19,6 +19,7 @@ class ApiConstants {
   static String get mediaBaseUrl => '$_scheme://$_host:7084';
 
   static const String login = '/auth/login';
+  static const String refreshToken = '/auth/refresh-token';
   static const String register = '/auth/register';
   static const String verifyOtp = '/auth/verify-otp';
   static const String movieNowShowing = '/MoviePub/now-showing';

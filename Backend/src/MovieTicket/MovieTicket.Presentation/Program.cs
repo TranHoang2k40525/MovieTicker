@@ -12,18 +12,21 @@ using MovieTicket.Application.Services.Implementations.Cinema;
 using MovieTicket.Application.Services.Implementations.Movie;
 using MovieTicket.Application.Services.Implementations.Payment;
 using MovieTicket.Application.Services.Implementations.Product;
+using MovieTicket.Application.Services.Implementations.Ticket;
 using MovieTicket.Application.Services.IServices.IBooking;
 using MovieTicket.Application.Services.IServices.ICheckout;
 using MovieTicket.Application.Services.IServices.ICinema;
 using MovieTicket.Application.Services.IServices.IMovie;
 using MovieTicket.Application.Services.IServices.IPayment;
 using MovieTicket.Application.Services.IServices.IProduct;
+using MovieTicket.Application.Services.IServices.ITicket;
 using MovieTicket.Domain.IReponsitories.IMovie;
 using MovieTicket.Domain.IResponsitories.IAuth;
 using MovieTicket.Domain.IResponsitories.IBooking;
 using MovieTicket.Domain.IResponsitories.ICheckout;
 using MovieTicket.Domain.IResponsitories.ICinema;
 using MovieTicket.Domain.IResponsitories.IProduct;
+using MovieTicket.Domain.IResponsitories.ITicket;
 using MovieTicket.Infrastructure.AppDbContext;
 using MovieTicket.Infrastructure.Repositories.AuthRespository;
 using MovieTicket.Infrastructure.Repositories.BookingRepository;
@@ -31,6 +34,7 @@ using MovieTicket.Infrastructure.Repositories.CheckoutRepository;
 using MovieTicket.Infrastructure.Repositories.CinemaRepository;
 using MovieTicket.Infrastructure.Repositories.MovieRespository;
 using MovieTicket.Infrastructure.Repositories.ProductRepository;
+using MovieTicket.Infrastructure.Repositories.TicketRepository;
 using MovieTicket.Infrastructure.Services.Implementations;
 using MovieTicket.Infrastructure.Services.IServices;
 using MovieTicket.Presentation.Services;
@@ -86,6 +90,7 @@ try
     builder.Services.AddScoped<ISeatMapRepository, SeatMapRepository>();
     builder.Services.AddScoped<IBookingRepository, BookingRepository>();
     builder.Services.AddScoped<ICheckoutRepository, CheckoutRepository>();
+    builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 
 
     // Services
@@ -108,6 +113,7 @@ try
     builder.Services.AddScoped<ICheckoutService, CheckoutService>();
     builder.Services.AddScoped<ICheckoutEmailService, CheckoutEmailService>();
     builder.Services.AddScoped<IPaymentService, PaymentService>();
+    builder.Services.AddScoped<IMyTicketService, MyTicketService>();
     // Background Tasks
     builder.Services.AddHostedService<AccountCleanupService>();
     builder.Services.AddHostedService<BookingHoldCleanupService>();

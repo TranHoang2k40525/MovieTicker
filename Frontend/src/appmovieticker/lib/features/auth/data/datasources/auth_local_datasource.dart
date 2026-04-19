@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 abstract class AuthLocalDataSource {
   Future<void> cacheToken(String token);
   Future<String?> getToken();
+  Future<void> cacheRefreshToken(String refreshToken);
+  Future<String?> getRefreshToken();
   Future<void> cacheUserProfile({
     int? id,
     String? fullName,
@@ -28,6 +30,16 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<String?> getToken() async {
     return sharedPreferences.getString('auth_token');
+  }
+
+  @override
+  Future<void> cacheRefreshToken(String refreshToken) {
+    return sharedPreferences.setString('refresh_token', refreshToken);
+  }
+
+  @override
+  Future<String?> getRefreshToken() async {
+    return sharedPreferences.getString('refresh_token');
   }
 
   @override
@@ -66,6 +78,7 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   @override
   Future<void> clearToken() async {
     await sharedPreferences.remove('auth_token');
+    await sharedPreferences.remove('refresh_token');
     await sharedPreferences.remove('auth_profile');
   }
 }

@@ -6,6 +6,7 @@ import '../../../auth/presentation/pages/register_page.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../pages/cinema_booking_list_page.dart';
 import '../pages/nearby_cinemas_page.dart';
+import '../pages/my_tickets_page.dart';
 import '../pages/movie_booking_list_page.dart';
 
 Future<void> showMovieMenuDialog(
@@ -201,7 +202,17 @@ Future<void> showMovieMenuDialog(
                         },
                       ),
                       _MenuIconItem(icon: Icons.card_giftcard_outlined, label: 'Ưu đãi', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
-                      _MenuIconItem(icon: Icons.confirmation_num_outlined, label: 'Vé của tôi', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
+                      _MenuIconItem(
+                        icon: Icons.confirmation_num_outlined,
+                        label: 'Vé của tôi',
+                        scale: scale,
+                        onTap: () {
+                          Navigator.of(dialogContext).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const MyTicketsPage()),
+                          );
+                        },
+                      ),
                       _MenuIconItem(icon: Icons.redeem_outlined, label: 'Đổi ưu đãi', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
                       _MenuIconItem(icon: Icons.store_outlined, label: 'Store', scale: scale, onTap: () => Navigator.of(dialogContext).pop()),
                       const SizedBox.shrink(),

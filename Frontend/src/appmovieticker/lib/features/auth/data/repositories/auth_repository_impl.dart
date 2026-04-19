@@ -30,6 +30,10 @@ class AuthRepositoryImpl implements AuthRepository {
       if (token != null) {
         await localDataSource.cacheToken(token);
       }
+      final refreshToken = _readRefreshToken(responseData);
+      if (refreshToken != null) {
+        await localDataSource.cacheRefreshToken(refreshToken);
+      }
 
       final UserModel userModel = UserModel.fromJson(responseData);
       await localDataSource.cacheUserProfile(
@@ -99,6 +103,22 @@ class AuthRepositoryImpl implements AuthRepository {
     ];
 
     for (final key in tokenKeys) {
+      final value = payload[key];
+      if (value is String && value.isNotEmpty) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  String? _readRefreshToken(Map<String, dynamic> payload) {
+    const refreshTokenKeys = [
+      'refreshToken',
+      'RefreshToken',
+    ];
+
+    for (final key in refreshTokenKeys) {
       final value = payload[key];
       if (value is String && value.isNotEmpty) {
         return value;
