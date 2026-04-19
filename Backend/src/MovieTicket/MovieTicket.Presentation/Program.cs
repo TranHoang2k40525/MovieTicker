@@ -37,6 +37,7 @@ using MovieTicket.Infrastructure.Repositories.ProductRepository;
 using MovieTicket.Infrastructure.Repositories.TicketRepository;
 using MovieTicket.Infrastructure.Services.Implementations;
 using MovieTicket.Infrastructure.Services.IServices;
+using MovieTicket.Presentation.Hub;
 using MovieTicket.Presentation.Services;
 using Serilog;
 
@@ -110,6 +111,8 @@ try
     builder.Services.AddScoped<IProductService, ProductService>();
     builder.Services.AddScoped<ISeatMapService, SeatMapService>();
     builder.Services.AddScoped<IBookingFlowService, BookingFlowService>();
+    builder.Services.AddSingleton<SeatRoomRegistry>();
+    builder.Services.AddSingleton<ISeatRealtimePublisher, SignalRSeatRealtimePublisher>();
     builder.Services.AddScoped<ICheckoutService, CheckoutService>();
     builder.Services.AddScoped<ICheckoutEmailService, CheckoutEmailService>();
     builder.Services.AddScoped<IPaymentService, PaymentService>();
@@ -180,6 +183,7 @@ try
     // CONTROLLERS & SWAGGER
     // =====================================================
     builder.Services.AddControllers();
+    builder.Services.AddSignalR();
     builder.Services.AddMemoryCache();
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
@@ -267,6 +271,7 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+    app.MapHub<SeatBookingHub>("/hubs/seat-booking");
 
     app.Run();
 }

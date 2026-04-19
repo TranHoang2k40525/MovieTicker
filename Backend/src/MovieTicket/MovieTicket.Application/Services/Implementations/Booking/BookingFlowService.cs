@@ -19,6 +19,7 @@ namespace MovieTicket.Application.Services.Implementations.Booking
         private readonly ISeatMapRepository _seatMapRepository;
         private readonly IUserRepository _userRepository;
         private readonly IProductRepository _productRepository;
+        private readonly ISeatRealtimePublisher _seatRealtimePublisher;
         private readonly ILogger<BookingFlowService> _logger;
 
         public BookingFlowService(
@@ -26,12 +27,14 @@ namespace MovieTicket.Application.Services.Implementations.Booking
             ISeatMapRepository seatMapRepository,
             IUserRepository userRepository,
             IProductRepository productRepository,
+            ISeatRealtimePublisher seatRealtimePublisher,
             ILogger<BookingFlowService> logger)
         {
             _bookingRepository = bookingRepository;
             _seatMapRepository = seatMapRepository;
             _userRepository = userRepository;
             _productRepository = productRepository;
+            _seatRealtimePublisher = seatRealtimePublisher;
             _logger = logger;
         }
 
@@ -110,6 +113,11 @@ namespace MovieTicket.Application.Services.Implementations.Booking
 
             await _bookingRepository.AddAsync(booking);
             await _bookingRepository.SaveChangesAsync();
+            await _seatRealtimePublisher.PublishHeldAsync(
+                request.ShowId,
+                booking.BookingId,
+                normalizedSeatIds,
+                now.AddMinutes(SeatHoldMinutes));
 
             _logger.LogInformation(
                 "Đã tạo hold bookingId={BookingId}, accountId={AccountId}, showId={ShowId}, seats={SeatCount}",
@@ -228,6 +236,20 @@ namespace MovieTicket.Application.Services.Implementations.Booking
             booking.Status = BookingStatus.pending;
             booking.TotalSeats = booking.BookingSeats.Count;
             await _bookingRepository.SaveChangesAsync();
+            if (booking.ShowId.HasValue)
+            {
+                var seatIds = booking.BookingSeats
+                    .Where(x => x.SeatId.HasValue)
+                    .Select(x => x.SeatId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                await _seatRealtimePublisher.PublishHeldAsync(
+                    booking.ShowId.Value,
+                    booking.BookingId,
+                    seatIds,
+                    paymentHoldUntil);
+            }
 
             _logger.LogInformation(
                 "Đã xác nhận bookingId={BookingId}, accountId={AccountId}, productCount={ProductCount}",
@@ -255,7 +277,19 @@ namespace MovieTicket.Application.Services.Implementations.Booking
 
             foreach (var booking in expiredBookings)
             {
+                var seatIds = booking.BookingSeats
+                    .Where(x => x.SeatId.HasValue)
+                    .Select(x => x.SeatId!.Value)
+                    .Distinct()
+                    .ToList();
+                var showId = booking.ShowId.GetValueOrDefault();
+
                 ReleaseBookingInternal(booking);
+
+                if (showId > 0 && seatIds.Count > 0)
+                {
+                    await _seatRealtimePublisher.PublishReleasedAsync(showId, booking.BookingId, seatIds, "hold_expired");
+                }
             }
 
             await _bookingRepository.SaveChangesAsync();
@@ -276,8 +310,20 @@ namespace MovieTicket.Application.Services.Implementations.Booking
                 return false;
             }
 
+            var seatIds = booking.BookingSeats
+                .Where(x => x.SeatId.HasValue)
+                .Select(x => x.SeatId!.Value)
+                .Distinct()
+                .ToList();
+            var showId = booking.ShowId.GetValueOrDefault();
+
             ReleaseBookingInternal(booking);
             await _bookingRepository.SaveChangesAsync();
+
+            if (showId > 0 && seatIds.Count > 0)
+            {
+                await _seatRealtimePublisher.PublishReleasedAsync(showId, booking.BookingId, seatIds, "user_cancelled");
+            }
             return true;
         }
 

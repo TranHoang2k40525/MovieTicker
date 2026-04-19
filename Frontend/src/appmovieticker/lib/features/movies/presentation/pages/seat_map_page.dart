@@ -5,11 +5,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+import '../../../../core/realtime/seat_realtime_client.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/network/dio_client.dart';
 import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../../auth/presentation/pages/login_page.dart';
 import '../../data/datasources/movies_remote_datasource.dart';
+import '../../data/models/seat_realtime_event_item.dart';
 import '../../data/models/seat_map_item.dart';
 import 'combo_selection_page.dart';
 
@@ -53,6 +55,7 @@ class _SeatMapPageState extends State<SeatMapPage> {
   final DioClient _dioClient = di.sl<DioClient>();
   final TransformationController _transformController = TransformationController();
   final Set<int> _selectedSeatIds = <int>{};
+  final SeatRealtimeClient _seatRealtimeClient = SeatRealtimeClient();
   Timer? _autoRefreshTimer;
 
   SeatMapResponseItem? _seatMap;
@@ -69,13 +72,108 @@ class _SeatMapPageState extends State<SeatMapPage> {
     });
     _loadSeatMap();
     _startAutoRefresh();
+    _connectRealtime();
   }
 
   @override
   void dispose() {
     _autoRefreshTimer?.cancel();
+    _disconnectRealtime();
     _transformController.dispose();
     super.dispose();
+  }
+
+  Future<void> _connectRealtime() async {
+    try {
+      await _seatRealtimeClient.connect(
+        showId: widget.showId,
+        onSeatChanged: (payload) {
+          if (!mounted) return;
+          final event = SeatRealtimeEventItem.fromJson(payload);
+          if (event.showId != widget.showId || event.seatIds.isEmpty) {
+            return;
+          }
+          _applyRealtimeSeatState(event);
+        },
+      );
+    } catch (_) {
+      // Seat map still works with polling fallback when realtime connection fails.
+    }
+  }
+
+  Future<void> _disconnectRealtime() async {
+    try {
+      await _seatRealtimeClient.leaveRoom(widget.showId);
+      await _seatRealtimeClient.disconnect();
+    } catch (_) {
+      // ignore teardown errors
+    }
+  }
+
+  void _applyRealtimeSeatState(SeatRealtimeEventItem event) {
+    final current = _seatMap;
+    if (current == null) {
+      return;
+    }
+
+    final updates = event.seatIds.toSet();
+    final rows = current.rows
+        .map((row) {
+          final cells = row.cells
+              .map((cell) {
+                if (cell.seatId == null || !updates.contains(cell.seatId)) {
+                  return cell;
+                }
+
+                final isAvailable = event.state == 'available';
+                final nextState = isAvailable
+                    ? 'available'
+                    : event.state == 'booked'
+                        ? 'booked'
+                        : 'held';
+
+                return SeatMapCellItem(
+                  colSeat: cell.colSeat,
+                  cellType: cell.cellType,
+                  state: nextState,
+                  selectable: isAvailable,
+                  isCoupleSeat: cell.isCoupleSeat,
+                  isOddEdgeRisk: cell.isOddEdgeRisk,
+                  seatId: cell.seatId,
+                  seatNumber: cell.seatNumber,
+                  seatClass: cell.seatClass,
+                  seatPrice: cell.seatPrice,
+                  pairId: cell.pairId,
+                  pairSeatId: cell.pairSeatId,
+                );
+              })
+              .toList();
+
+          return SeatMapRowItem(rowSeat: row.rowSeat, cells: cells);
+        })
+        .toList();
+
+    setState(() {
+      _seatMap = SeatMapResponseItem(
+        showId: current.showId,
+        movieId: current.movieId,
+        movieTitle: current.movieTitle,
+        showDate: current.showDate,
+        startTime: current.startTime,
+        cinemaId: current.cinemaId,
+        cinemaName: current.cinemaName,
+        cinemaAddress: current.cinemaAddress,
+        hallId: current.hallId,
+        hallName: current.hallName,
+        rows: rows,
+        legend: current.legend,
+        validationWarnings: current.validationWarnings,
+      );
+
+      if (event.state != 'available') {
+        _selectedSeatIds.removeWhere((x) => updates.contains(x));
+      }
+    });
   }
 
   void _startAutoRefresh() {

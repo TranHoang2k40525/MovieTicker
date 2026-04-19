@@ -8,6 +8,7 @@ import '../../../../core/constants/api_constants.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../data/datasources/payment_remote_datasource.dart';
 import '../../data/models/product_item.dart';
+import 'movies_page.dart';
 import 'payment_simulation_page.dart';
 
 class CheckoutPaymentPage extends StatefulWidget {
@@ -52,7 +53,8 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   bool _loading = true;
   bool _submitting = false;
   bool _syncingCombo = false;
-  bool _navigatingAfterHoldExpired = false;
+  bool _holdReleased = false;
+  bool _navigatingHome = false;
   late DateTime _expirationTime;
   Timer? _countdownTimer;
 
@@ -362,6 +364,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
 
       if (!mounted) return;
       if (paid == true) {
+        _holdReleased = true;
         Navigator.of(context).pop(true);
         return;
       }
@@ -398,9 +401,14 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
     final mm = remaining.inMinutes.clamp(0, 999);
     final ss = (remaining.inSeconds % 60).clamp(0, 59);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFE9E9E9),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        await _confirmCancelBooking();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFE9E9E9),
+        body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(12 * scale, 10 * scale, 12 * scale, 18 * scale),
           child: Column(
@@ -446,7 +454,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
                       child: Row(
                         children: [
                           IconButton(
-                            onPressed: () => Navigator.of(context).maybePop(),
+                            onPressed: _submitting ? null : _confirmCancelBooking,
                             icon: Icon(Icons.arrow_back, size: 22 * scale),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -560,6 +568,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -647,8 +656,8 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   }
 
   Future<void> _handleHoldExpired() async {
-    if (!mounted || _navigatingAfterHoldExpired) return;
-    _navigatingAfterHoldExpired = true;
+    if (!mounted || _navigatingHome) return;
+    _navigatingHome = true;
 
     await showDialog<void>(
       context: context,
@@ -665,8 +674,64 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       ),
     );
 
-    if (!mounted) return;
-    Navigator.of(context).pop('hold_expired');
+    await _releaseHoldSilently();
+    _navigateToHome();
+  }
+
+  Future<void> _confirmCancelBooking() async {
+    if (!mounted || _submitting || _navigatingHome) {
+      return;
+    }
+
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hủy thanh toán?'),
+        content: const Text('Nếu quay lại lúc này, ghế đang giữ sẽ được trả lại ngay. Bạn có chắc chắn muốn hủy không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Tiếp tục thanh toán'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Hủy đặt vé'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCancel != true || !mounted) {
+      return;
+    }
+
+    _navigatingHome = true;
+    await _releaseHoldSilently();
+    _navigateToHome();
+  }
+
+  Future<void> _releaseHoldSilently() async {
+    if (_holdReleased) {
+      return;
+    }
+
+    _holdReleased = true;
+    try {
+      await _dioClient.dio.delete('/bookings/holds/${widget.holdId}');
+    } catch (_) {
+      // best effort release
+    }
+  }
+
+  void _navigateToHome() {
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const MoviesPage()),
+      (route) => false,
+    );
   }
 
   double _uiScale(BuildContext context) {

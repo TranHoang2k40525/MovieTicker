@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using MovieTicket.Application.DTOs.Checkout;
+using MovieTicket.Application.Services.IServices.IBooking;
 using MovieTicket.Application.Services.IServices.ICheckout;
 using MovieTicket.Domain.Entities;
 using BookingEntity = MovieTicket.Domain.Entities.Booking;
@@ -14,17 +15,20 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
         private readonly IUserRepository _userRepository;
         private readonly ICheckoutRepository _checkoutRepository;
         private readonly ICheckoutEmailService _checkoutEmailService;
+        private readonly ISeatRealtimePublisher _seatRealtimePublisher;
         private readonly ILogger<CheckoutService> _logger;
 
         public CheckoutService(
             IUserRepository userRepository,
             ICheckoutRepository checkoutRepository,
             ICheckoutEmailService checkoutEmailService,
+            ISeatRealtimePublisher seatRealtimePublisher,
             ILogger<CheckoutService> logger)
         {
             _userRepository = userRepository;
             _checkoutRepository = checkoutRepository;
             _checkoutEmailService = checkoutEmailService;
+            _seatRealtimePublisher = seatRealtimePublisher;
             _logger = logger;
         }
 
@@ -178,6 +182,20 @@ namespace MovieTicket.Application.Services.Implementations.Checkout
             });
 
             await _checkoutRepository.SaveChangesAsync();
+
+            if (booking.ShowId.HasValue)
+            {
+                var seatIds = booking.BookingSeats
+                    .Where(x => x.SeatId.HasValue)
+                    .Select(x => x.SeatId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                await _seatRealtimePublisher.PublishBookedAsync(
+                    booking.ShowId.Value,
+                    booking.BookingId,
+                    seatIds);
+            }
 
             // Gửi email sau cùng
             if (!string.IsNullOrWhiteSpace(user.Email))

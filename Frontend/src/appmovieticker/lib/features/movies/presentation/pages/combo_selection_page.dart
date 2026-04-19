@@ -8,6 +8,7 @@ import '../../../auth/data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/movies_remote_datasource.dart';
 import '../../data/models/product_item.dart';
 import 'checkout_payment_page.dart';
+import 'movies_page.dart';
 
 class ComboSelectionPage extends StatefulWidget {
   const ComboSelectionPage({
@@ -49,6 +50,8 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
   late DateTime _expirationTime;
   bool _isSubmitting = false;
   bool _holdExpiredHandled = false;
+  bool _holdReleased = false;
+  bool _isNavigatingHome = false;
 
   @override
   void initState() {
@@ -71,13 +74,13 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
     });
   }
 
-  void _showExpiredDialog() {
+  Future<void> _showExpiredDialog() async {
     if (_holdExpiredHandled) {
       return;
     }
     _holdExpiredHandled = true;
 
-    showDialog(
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
@@ -87,13 +90,70 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              Navigator.of(context).pop('hold_expired');
             },
             child: const Text('OK'),
           ),
         ],
       ),
     );
+
+    await _releaseHoldSilently();
+    _navigateToHome();
+  }
+
+  Future<void> _releaseHoldSilently() async {
+    if (_holdReleased) {
+      return;
+    }
+
+    _holdReleased = true;
+    try {
+      await _dioClient.dio.delete('/bookings/holds/${widget.holdId}');
+    } catch (_) {
+      // best effort release
+    }
+  }
+
+  void _navigateToHome() {
+    if (!mounted || _isNavigatingHome) {
+      return;
+    }
+    _isNavigatingHome = true;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const MoviesPage()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _confirmCancelBooking() async {
+    if (!mounted || _isSubmitting || _isNavigatingHome) {
+      return;
+    }
+
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hủy đặt vé?'),
+        content: const Text('Nếu thoát lúc này, ghế đang giữ sẽ được trả lại ngay. Bạn có chắc chắn muốn hủy không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Tiếp tục đặt vé'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Hủy đặt vé'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCancel != true || !mounted) {
+      return;
+    }
+
+    await _releaseHoldSilently();
+    _navigateToHome();
   }
 
   Future<void> _loadProducts() async {
@@ -273,12 +333,13 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       if (!mounted) return;
 
       if (result == true) {
+        _holdReleased = true;
         Navigator.of(context).pop(true);
         return;
       }
 
       if (result == 'hold_expired') {
-        Navigator.of(context).pop('hold_expired');
+        await _showExpiredDialog();
         return;
       }
 
@@ -296,7 +357,7 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       });
 
       if (_isHoldExpiredError(e)) {
-        _showExpiredDialog();
+        await _showExpiredDialog();
         return;
       }
       
@@ -540,9 +601,14 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
     final seconds = remaining.inSeconds % 60;
     final isExpired = remaining.isNegative;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      body: SafeArea(
+    return WillPopScope(
+      onWillPop: () async {
+        await _confirmCancelBooking();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF7F7F7),
+        body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(8 * scale),
           child: Column(
@@ -604,7 +670,7 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
                     ),
                     SizedBox(width: 8 * scale),
                     GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: _confirmCancelBooking,
                       child: Icon(Icons.close, size: 24 * scale),
                     ),
                   ],
@@ -784,7 +850,7 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
                         side: const BorderSide(color: Color(0xFFE63C39)),
                         padding: EdgeInsets.symmetric(vertical: 12 * scale),
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: _confirmCancelBooking,
                       child: Text(
                         'Quay lại',
                         style: TextStyle(
@@ -818,6 +884,7 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

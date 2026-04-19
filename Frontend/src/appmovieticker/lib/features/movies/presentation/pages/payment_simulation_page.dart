@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/di/injection_container.dart' as di;
+import '../../../../core/network/dio_client.dart';
 import '../../data/datasources/payment_remote_datasource.dart';
 import 'movies_page.dart';
 
@@ -26,12 +27,15 @@ class PaymentSimulationPage extends StatefulWidget {
 }
 
 class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
+  final DioClient _dioClient = di.sl<DioClient>();
   final PaymentRemoteDataSource _paymentRemoteDataSource = di.sl<PaymentRemoteDataSource>();
 
   bool _submitting = false;
   late DateTime _expirationTime;
   Timer? _countdownTimer;
   bool _expiredHandled = false;
+  bool _holdReleased = false;
+  bool _navigatingHome = false;
 
   @override
   void initState() {
@@ -64,10 +68,11 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
   }
 
   Future<void> _handleExpired() async {
-    if (!mounted || _expiredHandled) {
+    if (!mounted || _expiredHandled || _navigatingHome) {
       return;
     }
     _expiredHandled = true;
+    _navigatingHome = true;
 
     await showDialog<void>(
       context: context,
@@ -84,10 +89,64 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
       ),
     );
 
+    await _releaseHoldSilently();
+    _navigateToHome();
+  }
+
+  Future<void> _releaseHoldSilently() async {
+    if (_holdReleased) {
+      return;
+    }
+
+    _holdReleased = true;
+    try {
+      await _dioClient.dio.delete('/bookings/holds/${widget.holdId}');
+    } catch (_) {
+      // best effort release
+    }
+  }
+
+  void _navigateToHome() {
     if (!mounted) {
       return;
     }
-    Navigator.of(context).pop('hold_expired');
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const MoviesPage()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _confirmCancelPayment() async {
+    if (!mounted || _submitting || _navigatingHome) {
+      return;
+    }
+
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hủy thanh toán?'),
+        content: const Text('Nếu thoát lúc này, ghế đang giữ sẽ được trả lại ngay. Bạn có chắc chắn muốn hủy không?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Tiếp tục thanh toán'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Hủy đặt vé'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldCancel != true || !mounted) {
+      return;
+    }
+
+    _navigatingHome = true;
+    await _releaseHoldSilently();
+    _navigateToHome();
   }
 
   Future<void> _simulatePayment() async {
@@ -135,10 +194,8 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
 
       if (!mounted) return;
       _countdownTimer?.cancel();
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MoviesPage()),
-        (route) => false,
-      );
+      _holdReleased = true;
+      _navigateToHome();
     } on DioException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,12 +238,21 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
     final mm = remaining.inMinutes.clamp(0, 999);
     final ss = (remaining.inSeconds % 60).clamp(0, 59);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F7),
-      appBar: AppBar(
-        title: const Text('Giả lập thanh toán'),
-      ),
-      body: Center(
+    return WillPopScope(
+      onWillPop: () async {
+        await _confirmCancelPayment();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF3F4F7),
+        appBar: AppBar(
+          leading: IconButton(
+            onPressed: _submitting ? null : _confirmCancelPayment,
+            icon: const Icon(Icons.arrow_back),
+          ),
+          title: const Text('Giả lập thanh toán'),
+        ),
+        body: Center(
         child: Card(
           margin: const EdgeInsets.symmetric(horizontal: 20),
           child: Padding(
@@ -228,6 +294,7 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
