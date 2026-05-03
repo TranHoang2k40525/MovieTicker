@@ -1,10 +1,10 @@
 ﻿import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/network/dio_client.dart';
-import '../../features/movies/data/datasources/movies_remote_datasource.dart';
-import '../../features/movies/data/datasources/notification_remote_datasource.dart';
-import '../../features/movies/data/datasources/payment_remote_datasource.dart';
-import '../../features/movies/data/datasources/ticket_remote_datasource.dart';
+import 'package:appmovieticker/features/movies/movie/data/datasources/movie/movies_remote_datasource.dart';
+import 'package:appmovieticker/features/movies/notifier/data/datasources/notification/notification_remote_datasource.dart';
+import 'package:appmovieticker/features/movies/payment/data/datasources/payment/payment_remote_datasource.dart';
+import 'package:appmovieticker/features/movies/booking/data/datasources/booking/ticket_remote_datasource.dart';
 import '../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';

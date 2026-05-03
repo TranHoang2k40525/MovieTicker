@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/theme/liquid_glass_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
-import 'features/movies/presentation/pages/movies_page.dart';
+import 'package:appmovieticker/features/movies/movie/presentation/pages/movie/movies_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

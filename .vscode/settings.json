@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^Set-Location \"c:/Users/hoang/Downloads/AppMovieTicker/Frontend/src/appmovieticker\"; \\$rg = \"\\$env:LOCALAPPDATA\\\\Programs\\\\Antigravity\\\\resources\\\\app\\\\node_modules\\\\@vscode\\\\ripgrep\\\\bin\\\\rg\\.exe\"; \\$targets = Get-ChildItem \"lib/features/movies/data\",\"lib/features/movies/presentation\" -Recurse -Filter \\*\\.dart \\| Sort-Object FullName; foreach \\(\\$t in \\$targets\\) \\{ \\$rel = \\$t\\.FullName\\.Replace\\(\\(Get-Location\\)\\.Path \\+ '\\\\',''\\)\\.Replace\\('\\\\','/'\\); \\$name = \\$t\\.Name; \\$refs = & \\$rg --files-with-matches --glob \"\\*\\.dart\" -F \"\\$name\" lib \\| ForEach-Object \\{ \\$_\\.Replace\\('\\\\','/'\\) \\} \\| Where-Object \\{ \\$_ -ne \\$rel \\} \\| Sort-Object -Unique; \\$count = @\\(\\$refs\\)\\.Count; \\$sample = if \\(\\$count -gt 0\\) \\{ \\(\\$refs \\| Select-Object -First 3\\) -join \"; \" \\} else \\{ \"none\" \\}; \"\\{0\\} \\| refs=\\{1\\} \\| sample=\\{2\\}\" -f \\$rel,\\$count,\\$sample \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

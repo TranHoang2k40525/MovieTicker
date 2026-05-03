@@ -8,7 +8,8 @@ namespace MovieTicket.Presentation.Controllers.Booking
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    //[Authorize]
+    [AllowAnonymous]
     public class SeatMapController : ControllerBase
     {
         private readonly ISeatMapService _seatMapService;

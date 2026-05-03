@@ -5,7 +5,7 @@ import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import 'widgets.dart';
 import 'register_page.dart';
-import '../../../movies/presentation/pages/movies_page.dart';
+import 'package:appmovieticker/features/movies/movie/presentation/pages/movie/movies_page.dart';
 
 class LoginPage extends StatefulWidget {
   final String? prefilledEmail;
