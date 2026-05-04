@@ -24,7 +24,7 @@ class DioClient {
         final client = HttpClient();
         // Support local development certificate on localhost.
         client.badCertificateCallback = (cert, host, port) {
-          return host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2';
+          return host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2' || host == '192.168.0.149';
         };
         return client;
       };
@@ -102,7 +102,7 @@ class DioClient {
       adapter.createHttpClient = () {
         final client = HttpClient();
         client.badCertificateCallback = (cert, host, port) {
-          return host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2';
+          return host == 'localhost' || host == '127.0.0.1' || host == '10.0.2.2' || host == '192.168.0.149';
         };
         return client;
       };

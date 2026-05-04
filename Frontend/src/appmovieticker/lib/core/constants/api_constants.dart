@@ -1,15 +1,17 @@
 ﻿import 'dart:io' show Platform;
 
 class ApiConstants {
+  static const String _lanHost = '192.168.0.149';
+
   static String get _host {
-    if (Platform.isAndroid) {
-      return '10.0.2.2';
+    if (Platform.isAndroid || Platform.isIOS) {
+      return _lanHost;
     }
     return 'localhost';
   }
 
   static String get _scheme {
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid || Platform.isIOS) {
       return 'http';
     }
     return 'https';
