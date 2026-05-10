@@ -7,6 +7,8 @@ import 'package:appmovieticker/core/di/injection_container.dart' as di;
 import 'package:appmovieticker/core/network/dio_client.dart';
 import 'package:appmovieticker/features/movies/payment/data/datasources/payment/payment_remote_datasource.dart';
 import 'package:appmovieticker/features/movies/movie/presentation/pages/movie/movies_page.dart';
+import 'package:appmovieticker/features/movies/show/presentation/pages/showtime/cinema_showtime_page.dart';
+import 'package:appmovieticker/features/movies/show/presentation/pages/showtime/movie_showtime_page.dart';
 
 class PaymentSimulationPage extends StatefulWidget {
   const PaymentSimulationPage({
@@ -35,7 +37,7 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
   Timer? _countdownTimer;
   bool _expiredHandled = false;
   bool _holdReleased = false;
-  bool _navigatingHome = false;
+  bool _navigatingAway = false;
 
   @override
   void initState() {
@@ -68,29 +70,40 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
   }
 
   Future<void> _handleExpired() async {
-    if (!mounted || _expiredHandled || _navigatingHome) {
+    if (!mounted || _expiredHandled || _navigatingAway) {
       return;
     }
     _expiredHandled = true;
-    _navigatingHome = true;
+    _navigatingAway = true;
 
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hết thời gian giữ ghế'),
+        titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Color(0xFF374151), height: 1.35),
         content: const Text('Phiên giữ ghế đã hết hạn. Vui lòng chọn lại suất chiếu.'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE62C2C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: const Text('Đồng ý'),
           ),
         ],
       ),
     );
 
     await _releaseHoldSilently();
-    _navigateToHome();
+    _navigateBackToShowtime();
   }
 
   Future<void> _releaseHoldSilently() async {
@@ -106,6 +119,16 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
     }
   }
 
+  void _navigateBackToShowtime() {
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).popUntil((route) {
+      return route.settings.name == MovieShowtimePage.routeName || route.settings.name == CinemaShowtimePage.routeName;
+    });
+  }
+
   void _navigateToHome() {
     if (!mounted) {
       return;
@@ -118,21 +141,33 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
   }
 
   Future<void> _confirmCancelPayment() async {
-    if (!mounted || _submitting || _navigatingHome) {
+    if (!mounted || _submitting || _navigatingAway) {
       return;
     }
 
     final shouldCancel = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hủy thanh toán?'),
+        titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Color(0xFF374151), height: 1.35),
         content: const Text('Nếu thoát lúc này, ghế đang giữ sẽ được trả lại ngay. Bạn có chắc chắn muốn hủy không?'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF374151)),
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Tiếp tục thanh toán'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE62C2C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Hủy đặt vé'),
           ),
@@ -144,9 +179,9 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
       return;
     }
 
-    _navigatingHome = true;
+    _navigatingAway = true;
     await _releaseHoldSilently();
-    _navigateToHome();
+    _navigateBackToShowtime();
   }
 
   Future<void> _simulatePayment() async {
@@ -181,10 +216,21 @@ class _PaymentSimulationPageState extends State<PaymentSimulationPage> {
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Thanh toán thành công'),
+          titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
+          contentTextStyle: const TextStyle(color: Color(0xFF374151), height: 1.35),
           content: Text('Mã vé: $ticketCode\nSố tiền: ${paidAmount.toStringAsFixed(0)} đ'),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           actions: [
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE62C2C),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+              ),
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Hoàn tất'),
             ),

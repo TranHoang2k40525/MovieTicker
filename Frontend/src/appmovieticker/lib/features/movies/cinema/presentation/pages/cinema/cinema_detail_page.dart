@@ -26,7 +26,6 @@ class CinemaDetailPage extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
             ),
             child: Column(
               children: [

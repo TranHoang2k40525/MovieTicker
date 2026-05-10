@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:appmovieticker/features/movies/booking/data/models/booking/seat_map_item.dart';
 import 'package:appmovieticker/features/movies/booking/presentation/widgets/seat_map/seat_map_styles.dart';
 
-class SeatMapContent extends StatelessWidget {
+class SeatMapContent extends StatefulWidget {
   const SeatMapContent({
     super.key,
     required this.seatMap,
@@ -28,38 +28,80 @@ class SeatMapContent extends StatelessWidget {
   final Size viewportSize;
 
   @override
+  State<SeatMapContent> createState() => _SeatMapContentState();
+}
+
+class _SeatMapContentState extends State<SeatMapContent> {
+  bool _initialized = false;
+
+  @override
+  void didUpdateWidget(covariant SeatMapContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.seatMap != widget.seatMap) {
+      _initialized = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final grid = _buildGrid();
     final contentWidth = _gridWidth();
     final contentHeight = _gridHeight();
 
-    return Stack(
+    // Tính scale range dựa trên màn hình
+    final screenSize = MediaQuery.sizeOf(context);
+    final minScale = screenSize.shortestSide > 1000 ? 0.6 : 0.7;
+    final maxScale = screenSize.shortestSide > 1000 ? 3.5 : 3.0;
+    final boundaryMargin = screenSize.shortestSide > 1000 ? 140.0 : 100.0;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_initialized) return;
+      final controller = widget.transformationController;
+      final current = controller.value;
+      final isIdentity = current.storage.every((v) => v == 0) || (current.getTranslation().x == 0 && current.getTranslation().y == 0);
+      if (!mounted) return;
+      if (isIdentity) {
+        final vx = widget.viewportSize.width;
+        final vy = widget.viewportSize.height;
+        final dx = (vx - contentWidth) / 2.0;
+        final dy = (vy - contentHeight) / 2.0;
+        final matrix = Matrix4.translationValues(dx, dy, 0);
+        controller.value = matrix;
+      }
+      _initialized = true;
+    });
+
+    return Column(
       children: [
-        Center(
-          child: InteractiveViewer(
-            transformationController: transformationController,
-            minScale: 0.8,
-            maxScale: 2.8,
-            boundaryMargin: const EdgeInsets.all(80),
-            constrained: false,
-            child: SizedBox(
-              width: contentWidth,
-              height: contentHeight,
-              child: grid,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _MiniMap(
+              seatMap: widget.seatMap,
+              selectedSeatIds: widget.selectedSeatIds,
+              scale: widget.scale,
+              mainCellSize: widget.cellSize,
+              miniCellSize: widget.miniCellSize,
+              viewportSize: widget.viewportSize,
+              transformationController: widget.transformationController,
             ),
-          ),
+            Expanded(child: SizedBox.shrink()),
+          ],
         ),
-        Positioned(
-          top: 8 * scale,
-          right: 8 * scale,
-          child: _MiniMap(
-            seatMap: seatMap,
-            selectedSeatIds: selectedSeatIds,
-            scale: scale,
-            mainCellSize: cellSize,
-            miniCellSize: miniCellSize,
-            viewportSize: viewportSize,
-            transformationController: transformationController,
+        Expanded(
+          child: Center(
+            child: InteractiveViewer(
+              transformationController: widget.transformationController,
+              minScale: minScale,
+              maxScale: maxScale,
+              boundaryMargin: EdgeInsets.all(boundaryMargin),
+              constrained: false,
+              child: SizedBox(
+                width: contentWidth,
+                height: contentHeight,
+                child: grid,
+              ),
+            ),
           ),
         ),
       ],
@@ -69,22 +111,22 @@ class SeatMapContent extends StatelessWidget {
   Widget _buildGrid() {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: seatMap.rows.map((row) {
+      children: widget.seatMap.rows.map((row) {
         return Padding(
-          padding: EdgeInsets.symmetric(vertical: 1.5 * scale),
+          padding: EdgeInsets.symmetric(vertical: 1.5 * widget.scale),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               ...row.cells.map(
                 (cell) => Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 0.7 * scale),
+                  padding: EdgeInsets.symmetric(horizontal: 0.7 * widget.scale),
                   child: GestureDetector(
-                    onTap: cell.selectable ? () => onSeatTap(cell) : null,
+                    onTap: cell.selectable ? () => widget.onSeatTap(cell) : null,
                     child: _SeatCell(
                       cell: cell,
-                      isSelected: cell.seatId != null && selectedSeatIds.contains(cell.seatId),
-                      size: cellSize,
-                      scale: scale,
+                      isSelected: cell.seatId != null && widget.selectedSeatIds.contains(cell.seatId),
+                      size: widget.cellSize,
+                      scale: widget.scale,
                     ),
                   ),
                 ),
@@ -97,14 +139,14 @@ class SeatMapContent extends StatelessWidget {
   }
 
   double _gridWidth() {
-    final maxColumns = seatMap.rows.fold<int>(0, (maxValue, row) => math.max(maxValue, row.cells.length));
-    final cellGap = 0.7 * scale;
-    return (maxColumns * (cellSize + (cellGap * 2))) + (8 * scale);
+    final maxColumns = widget.seatMap.rows.fold<int>(0, (maxValue, row) => math.max(maxValue, row.cells.length));
+    final cellGap = 0.7 * widget.scale;
+    return (maxColumns * (widget.cellSize + (cellGap * 2))) + (8 * widget.scale);
   }
 
   double _gridHeight() {
-    final rowGap = 1.5 * scale;
-    return (seatMap.rows.length * (cellSize + (rowGap * 2))) + (8 * scale);
+    final rowGap = 1.5 * widget.scale;
+    return (widget.seatMap.rows.length * (widget.cellSize + (rowGap * 2))) + (8 * widget.scale);
   }
 }
 
@@ -130,9 +172,9 @@ class _MiniMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final transform = transformationController.value;
-    final boxWidth = 118 * scale;
-    final boxHeight = 118 * scale;
-    final padding = 6 * scale;
+    final boxWidth = 140 * scale;
+    final boxHeight = 210 * scale;
+    final padding = 8 * scale;
     final innerWidth = boxWidth - (padding * 2);
     final innerHeight = boxHeight - (padding * 2);
     final contentWidth = _contentWidth();
@@ -154,26 +196,41 @@ class _MiniMap extends StatelessWidget {
       height: boxHeight,
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8 * scale),
-        border: Border.all(color: const Color(0xFF2D2D2D), width: 1),
+        color: const Color(0xFF5A5A5A),
+        borderRadius: BorderRadius.circular(2 * scale),
+        border: Border.all(color: const Color(0xFFB33A35), width: 1.2),
       ),
       child: Stack(
         children: [
+          Positioned(
+            top: 6 * scale,
+            left: 0,
+            right: 0,
+            child: Text(
+              'MÀN HÌNH',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11 * scale, color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
           Positioned.fill(
-            child: ClipRect(
-              child: Transform.scale(
-                scale: fitScale,
-                alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: contentWidth,
-                  height: contentHeight,
-                  child: _MiniGrid(
-                    seatMap: seatMap,
-                    selectedSeatIds: selectedSeatIds,
-                    miniCellSize: miniCellSize,
-                    cellGap: 0.7 * scale,
-                    rowGap: 1.5 * scale,
+            child: Padding(
+              padding: EdgeInsets.only(top: 28 * scale),
+              child: ClipRect(
+                child: Center(
+                  child: Transform.scale(
+                    scale: fitScale,
+                    alignment: Alignment.center,
+                    child: SizedBox(
+                      width: contentWidth,
+                      height: contentHeight,
+                      child: _MiniGrid(
+                        seatMap: seatMap,
+                        selectedSeatIds: selectedSeatIds,
+                        miniCellSize: miniCellSize,
+                        cellGap: 0.7 * scale,
+                        rowGap: 1.5 * scale,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -181,14 +238,14 @@ class _MiniMap extends StatelessWidget {
           ),
           if (visibleRect != null)
             Positioned(
-              left: padding + (visibleRect.left * (miniCellSize / mainCellSize) * fitScale),
-              top: padding + (visibleRect.top * (miniCellSize / mainCellSize) * fitScale),
+              left: padding + ((innerWidth - (contentWidth * fitScale)) / 2) + (visibleRect.left * (miniCellSize / mainCellSize) * fitScale),
+              top: padding + 28 * scale + ((innerHeight - (contentHeight * fitScale)) / 2) + (visibleRect.top * (miniCellSize / mainCellSize) * fitScale),
               child: Container(
                 width: math.max(18 * scale, visibleRect.width * (miniCellSize / mainCellSize) * fitScale),
                 height: math.max(18 * scale, visibleRect.height * (miniCellSize / mainCellSize) * fitScale),
                 decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFF1D4ED8), width: 1.1),
-                  color: const Color(0x331D4ED8),
+                  border: Border.all(color: const Color(0xFFF4D14C), width: 1.1),
+                  color: const Color(0x33F4D14C),
                 ),
               ),
             ),

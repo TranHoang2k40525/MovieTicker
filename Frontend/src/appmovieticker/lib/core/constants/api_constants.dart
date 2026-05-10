@@ -1,7 +1,7 @@
 ﻿import 'dart:io' show Platform;
 
 class ApiConstants {
-  static const String _lanHost = '192.168.0.149';
+  static const String _lanHost = '192.168.1.104';
 
   static String get _host {
     if (Platform.isAndroid || Platform.isIOS) {

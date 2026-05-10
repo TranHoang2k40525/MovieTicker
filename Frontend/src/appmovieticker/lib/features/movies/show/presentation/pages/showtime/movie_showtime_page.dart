@@ -9,9 +9,12 @@ import 'package:appmovieticker/features/movies/booking/presentation/pages/bookin
 import 'package:appmovieticker/features/movies/movie/presentation/widgets/movie/movie_menu_dialog.dart';
 
 class MovieShowtimePage extends StatefulWidget {
-  const MovieShowtimePage({super.key, required this.movie});
+  static const routeName = '/movie-showtime';
+
+  const MovieShowtimePage({super.key, required this.movie, this.initialPosition});
 
   final MovieListItem movie;
+  final Position? initialPosition;
 
   @override
   State<MovieShowtimePage> createState() => _MovieShowtimePageState();
@@ -30,7 +33,16 @@ class _MovieShowtimePageState extends State<MovieShowtimePage> {
   @override
   void initState() {
     super.initState();
-    _loadLocationAndShowtimes();
+    // If caller provided an initial position, use it immediately to load showtimes
+    if (widget.initialPosition != null) {
+      _position = widget.initialPosition;
+      // load showtimes for the default selected date
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadShowtimesForDate(_selectedDate);
+      });
+    } else {
+      _loadLocationAndShowtimes();
+    }
   }
 
   Future<void> _loadLocationAndShowtimes() async {
@@ -125,7 +137,6 @@ class _MovieShowtimePageState extends State<MovieShowtimePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
             ),
             child: Column(
               children: [

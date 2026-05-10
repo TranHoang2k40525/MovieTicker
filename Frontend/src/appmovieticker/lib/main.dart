@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/di/injection_container.dart' as di;
 import 'core/theme/liquid_glass_theme.dart';
+import 'core/widgets/liquid_glass_background.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:appmovieticker/features/movies/movie/presentation/pages/movie/movies_page.dart';
 
@@ -22,6 +23,11 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'Rap chieu phim MTB 67CS1',
         theme: LiquidGlassTheme.build(),
+        builder: (context, child) {
+          return LiquidGlassBackground(
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
         home: const MoviesPage(),
       ),
     );

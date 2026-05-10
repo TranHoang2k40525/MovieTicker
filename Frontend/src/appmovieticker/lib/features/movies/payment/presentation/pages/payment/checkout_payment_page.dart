@@ -8,7 +8,8 @@ import 'package:appmovieticker/core/constants/api_constants.dart';
 import 'package:appmovieticker/core/network/dio_client.dart';
 import 'package:appmovieticker/features/movies/payment/data/datasources/payment/payment_remote_datasource.dart';
 import 'package:appmovieticker/features/movies/product/data/models/product/product_item.dart';
-import 'package:appmovieticker/features/movies/movie/presentation/pages/movie/movies_page.dart';
+import 'package:appmovieticker/features/movies/show/presentation/pages/showtime/cinema_showtime_page.dart';
+import 'package:appmovieticker/features/movies/show/presentation/pages/showtime/movie_showtime_page.dart';
 import 'payment_simulation_page.dart';
 
 class CheckoutPaymentPage extends StatefulWidget {
@@ -54,7 +55,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   bool _submitting = false;
   bool _syncingCombo = false;
   bool _holdReleased = false;
-  bool _navigatingHome = false;
+  bool _navigatingAway = false;
   late DateTime _expirationTime;
   Timer? _countdownTimer;
 
@@ -300,7 +301,11 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(dto.title),
+          titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,9 +316,20 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
               Text('Giảm: ${_formatCurrency(dto.discountValue)}', style: TextStyle(fontSize: 11 * scale)),
             ],
           ),
+          contentTextStyle: TextStyle(color: const Color(0xFF374151), fontSize: 12 * scale, height: 1.35),
+          actionsPadding: EdgeInsets.fromLTRB(16 * scale, 0, 16 * scale, 16 * scale),
           actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Đóng')),
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: const Color(0xFF374151)),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Đóng'),
+            ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE62C2C),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
                 setState(() {
@@ -656,19 +672,30 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   }
 
   Future<void> _handleHoldExpired() async {
-    if (!mounted || _navigatingHome) return;
-    _navigatingHome = true;
+    if (!mounted || _navigatingAway) return;
+    _navigatingAway = true;
 
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hết thời gian giữ ghế'),
+        titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Color(0xFF374151), height: 1.35),
         content: const Text('Phiên giữ ghế đã hết hạn. Bạn sẽ quay lại trang chọn suất chiếu.'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE62C2C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
+            child: const Text('Đồng ý'),
           ),
         ],
       ),
@@ -679,21 +706,33 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   }
 
   Future<void> _confirmCancelBooking() async {
-    if (!mounted || _submitting || _navigatingHome) {
+    if (!mounted || _submitting || _navigatingAway) {
       return;
     }
 
     final shouldCancel = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hủy thanh toán?'),
+        titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Color(0xFF374151), height: 1.35),
         content: const Text('Nếu quay lại lúc này, ghế đang giữ sẽ được trả lại ngay. Bạn có chắc chắn muốn hủy không?'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF374151)),
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Tiếp tục thanh toán'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE62C2C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Hủy đặt vé'),
           ),
@@ -705,7 +744,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       return;
     }
 
-    _navigatingHome = true;
+    _navigatingAway = true;
     await _releaseHoldSilently();
     _navigateToHome();
   }
@@ -728,10 +767,9 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       return;
     }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MoviesPage()),
-      (route) => false,
-    );
+    Navigator.of(context).popUntil((route) {
+      return route.settings.name == MovieShowtimePage.routeName || route.settings.name == CinemaShowtimePage.routeName;
+    });
   }
 
   double _uiScale(BuildContext context) {

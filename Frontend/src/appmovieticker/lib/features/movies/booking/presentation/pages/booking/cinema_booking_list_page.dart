@@ -99,7 +99,6 @@ class _CinemaBookingListPageState extends State<CinemaBookingListPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
             ),
             child: Column(
               children: [
@@ -130,7 +129,10 @@ class _CinemaBookingListPageState extends State<CinemaBookingListPage> {
                                   return ListTile(
                                     onTap: () {
                                       Navigator.of(context).push(
-                                        MaterialPageRoute(builder: (_) => CinemaShowtimePage(cinema: cinema)),
+                                        MaterialPageRoute(
+                                          settings: const RouteSettings(name: CinemaShowtimePage.routeName),
+                                          builder: (_) => CinemaShowtimePage(cinema: cinema),
+                                        ),
                                       );
                                     },
                                     title: Text(

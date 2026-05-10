@@ -301,7 +301,6 @@ class _SeatMapPageState extends State<SeatMapPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
             ),
             child: Column(
               children: [
@@ -342,7 +341,7 @@ class _SeatMapPageState extends State<SeatMapPage> {
                                             onSeatTap: (cell) => _toggleSeat(cell),
                                             scale: scale,
                                             cellSize: 25 * scale,
-                                            miniCellSize: math.max(2.0, (25 * scale) / 5),
+                                            miniCellSize: math.max(2.0, (25 * scale) * 0.7 / 5),
                                             transformationController: _transformController,
                                             viewportSize: Size(constraints.maxWidth, constraints.maxHeight),
                                           );
@@ -384,8 +383,15 @@ class _SeatMapPageState extends State<SeatMapPage> {
       return;
     }
 
+    final pairCell = cell.isCoupleSeat ? _resolveCouplePair(cell) : null;
+    final pairSeatId = pairCell?.seatId;
+    final validationError = _selectionValidationError(cell, pairCell);
+    if (validationError != null) {
+      _showSeatWarning(validationError);
+      return;
+    }
+
     if (cell.isCoupleSeat) {
-      final pairCell = _resolveCouplePair(cell);
       if (pairCell == null) {
         _showSeatWarning('Ghế này là ghế lẻ cuối hàng, không thể đặt.');
         return;
@@ -396,9 +402,6 @@ class _SeatMapPageState extends State<SeatMapPage> {
         return;
       }
     }
-
-    final pairCell = cell.isCoupleSeat ? _resolveCouplePair(cell) : null;
-    final pairSeatId = pairCell?.seatId;
 
     setState(() {
       if (cell.isCoupleSeat && pairSeatId != null) {
@@ -422,6 +425,115 @@ class _SeatMapPageState extends State<SeatMapPage> {
     if (cell.isOddEdgeRisk) {
       _showSeatWarning('Ghế này có nguy cơ tạo ghế lẻ ở biên.');
     }
+  }
+
+  String? _selectionValidationError(SeatMapCellItem cell, SeatMapCellItem? pairCell) {
+    final seatMap = _seatMap;
+    if (seatMap == null) return null;
+
+    final row = seatMap.rows.firstWhere(
+      (item) => item.cells.any((seat) => seat.seatId == cell.seatId),
+      orElse: () => const SeatMapRowItem(rowSeat: '', cells: []),
+    );
+    if (row.cells.isEmpty) return null;
+
+    final seatCells = row.cells.where((item) => item.cellType == 'SEAT').toList();
+    final cellIndex = seatCells.indexWhere((item) => item.seatId == cell.seatId);
+    if (cellIndex < 0) return null;
+
+    final availableIndexes = seatCells
+        .asMap()
+        .entries
+        .where((entry) => _isAvailableSeatCell(entry.value))
+        .map((entry) => entry.key)
+        .toSet();
+
+    final isCurrentlySelected = _selectedSeatIds.contains(cell.seatId);
+
+    // Business exception: if the row only has 2 sellable seats left, allow them
+    // even when they would otherwise violate rule 1 or rule 2.
+    if (!isCurrentlySelected && availableIndexes.length == 2 && availableIndexes.contains(cellIndex)) {
+      return null;
+    }
+
+    final selectedIndexes = seatCells
+        .asMap()
+        .entries
+        .where((entry) => _selectedSeatIds.contains(entry.value.seatId))
+        .map((entry) => entry.key)
+        .toSet();
+
+    final occupiedIndexes = seatCells
+        .asMap()
+        .entries
+        .where((entry) => _isOccupiedSeatCell(entry.value))
+        .map((entry) => entry.key)
+        .toSet();
+
+    final nextSelectedIndexes = <int>{...selectedIndexes, ...occupiedIndexes};
+    if (isCurrentlySelected) {
+      nextSelectedIndexes.remove(cellIndex);
+    } else {
+      nextSelectedIndexes.add(cellIndex);
+    }
+
+    if (pairCell?.seatId != null) {
+      final pairIndex = seatCells.indexWhere((item) => item.seatId == pairCell!.seatId);
+      if (pairIndex >= 0) {
+        if (isCurrentlySelected) {
+          nextSelectedIndexes.remove(pairIndex);
+        } else {
+          nextSelectedIndexes.add(pairIndex);
+        }
+      }
+    }
+
+    final leftEdgeIndex = 0;
+    final rightEdgeIndex = seatCells.length - 1;
+    final leftAdjacentIndex = 1;
+    final rightAdjacentIndex = seatCells.length - 2;
+
+    if (nextSelectedIndexes.contains(leftAdjacentIndex) && !nextSelectedIndexes.contains(leftEdgeIndex)) {
+      return 'Không thể chọn ghế ở cạnh ngoài cùng bên trái khi ghế mép chưa được chọn.';
+    }
+
+    if (nextSelectedIndexes.contains(rightAdjacentIndex) && !nextSelectedIndexes.contains(rightEdgeIndex)) {
+      return 'Không thể chọn ghế ở cạnh ngoài cùng bên phải khi ghế mép chưa được chọn.';
+    }
+
+    final sortedIndexes = nextSelectedIndexes.toList()..sort();
+    if (sortedIndexes.length < 2) {
+      return null;
+    }
+
+    for (var i = 0; i < sortedIndexes.length - 1; i++) {
+      final gap = sortedIndexes[i + 1] - sortedIndexes[i] - 1;
+      if (gap == 1) {
+        return 'Không thể để trống đúng 1 ghế giữa 2 ghế đang chọn.';
+      }
+    }
+
+    if (cell.isCoupleSeat && pairCell == null) {
+      return 'Ghế này là ghế lẻ cuối hàng, không thể đặt.';
+    }
+
+    return null;
+  }
+
+  bool _isOccupiedSeatCell(SeatMapCellItem cell) {
+    if (cell.cellType != 'SEAT') {
+      return false;
+    }
+
+    return cell.state.toLowerCase() != 'available' || !cell.selectable;
+  }
+
+  bool _isAvailableSeatCell(SeatMapCellItem cell) {
+    if (cell.cellType != 'SEAT') {
+      return false;
+    }
+
+    return cell.state.toLowerCase() == 'available' && cell.selectable;
   }
 
   SeatMapCellItem? _resolveCouplePair(SeatMapCellItem cell) {

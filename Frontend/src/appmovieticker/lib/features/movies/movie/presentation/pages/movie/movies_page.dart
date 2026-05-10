@@ -223,7 +223,6 @@ class _MoviesPageState extends State<MoviesPage> {
             decoration: BoxDecoration(
               color: const Color(0xFFD9D9D9),
               borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
             ),
             child: Column(
               children: [

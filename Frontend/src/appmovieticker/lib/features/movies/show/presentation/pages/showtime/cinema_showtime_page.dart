@@ -8,6 +8,8 @@ import 'package:appmovieticker/features/movies/booking/presentation/pages/bookin
 import 'package:appmovieticker/features/movies/movie/presentation/widgets/movie/movie_menu_dialog.dart';
 
 class CinemaShowtimePage extends StatefulWidget {
+  static const routeName = '/cinema-showtime';
+
   const CinemaShowtimePage({super.key, required this.cinema});
 
   final NearbyCinemaItem cinema;
@@ -76,7 +78,6 @@ class _CinemaShowtimePageState extends State<CinemaShowtimePage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
             ),
             child: Column(
               children: [

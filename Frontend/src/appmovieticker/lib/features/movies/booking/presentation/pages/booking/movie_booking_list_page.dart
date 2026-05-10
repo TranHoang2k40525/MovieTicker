@@ -165,7 +165,6 @@ class _MovieBookingListPageState extends State<MovieBookingListPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
             ),
             child: Column(
               children: [
@@ -239,7 +238,10 @@ class _MovieBookingListPageState extends State<MovieBookingListPage> {
                                     movie: movie,
                                     scale: scale,
                                     onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(builder: (_) => MovieShowtimePage(movie: movie)),
+                                      MaterialPageRoute(
+                                        settings: RouteSettings(name: MovieShowtimePage.routeName),
+                                        builder: (_) => MovieShowtimePage(movie: movie),
+                                      ),
                                     ),
                                   );
                                 },

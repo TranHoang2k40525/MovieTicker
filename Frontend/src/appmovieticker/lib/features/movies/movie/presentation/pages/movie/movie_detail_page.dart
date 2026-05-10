@@ -4,6 +4,7 @@ import 'package:appmovieticker/core/di/injection_container.dart' as di;
 import 'package:appmovieticker/features/movies/movie/data/datasources/movie/movies_remote_datasource.dart';
 import 'package:appmovieticker/features/movies/movie/data/models/movie/movie_list_item.dart';
 import 'package:appmovieticker/features/movies/show/presentation/pages/showtime/movie_showtime_page.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:appmovieticker/features/movies/movie/presentation/widgets/movie/movie_menu_dialog.dart';
 
 class MovieDetailPage extends StatefulWidget {
@@ -61,8 +62,7 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFFD9D9D9),
-              borderRadius: BorderRadius.circular(28 * scale),
-              border: Border.all(color: const Color(0xFF3A3A3A), width: 1.2),
+                  borderRadius: BorderRadius.circular(28 * scale),
             ),
             child: _loadingDetail
                 ? const Center(child: CircularProgressIndicator())
@@ -101,9 +101,26 @@ class _MovieDetailPageState extends State<MovieDetailPage> {
   }
 
   void _bookTicket() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => MovieShowtimePage(movie: _movie)),
-    );
+    // Try to get a fast current position and pass it to the showtime page so
+    // it can load showtimes immediately on first navigation.
+    () async {
+      Position? pos;
+      try {
+        pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        );
+      } catch (_) {
+        pos = null;
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          settings: const RouteSettings(name: MovieShowtimePage.routeName),
+          builder: (_) => MovieShowtimePage(movie: _movie, initialPosition: pos),
+        ),
+      );
+    }();
   }
 
   double _uiScale(BuildContext context) {

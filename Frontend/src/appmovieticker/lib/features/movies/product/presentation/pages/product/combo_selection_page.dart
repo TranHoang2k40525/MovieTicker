@@ -8,7 +8,8 @@ import 'package:appmovieticker/features/auth/data/datasources/auth_local_datasou
 import 'package:appmovieticker/features/movies/movie/data/datasources/movie/movies_remote_datasource.dart';
 import 'package:appmovieticker/features/movies/product/data/models/product/product_item.dart';
 import 'package:appmovieticker/features/movies/payment/presentation/pages/payment/checkout_payment_page.dart';
-import 'package:appmovieticker/features/movies/movie/presentation/pages/movie/movies_page.dart';
+import 'package:appmovieticker/features/movies/show/presentation/pages/showtime/cinema_showtime_page.dart';
+import 'package:appmovieticker/features/movies/show/presentation/pages/showtime/movie_showtime_page.dart';
 
 class ComboSelectionPage extends StatefulWidget {
   const ComboSelectionPage({
@@ -51,7 +52,7 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
   bool _isSubmitting = false;
   bool _holdExpiredHandled = false;
   bool _holdReleased = false;
-  bool _isNavigatingHome = false;
+  bool _isNavigatingAway = false;
 
   @override
   void initState() {
@@ -84,14 +85,25 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hết thời gian giữ ghế'),
+        titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Color(0xFF374151), height: 1.35),
         content: const Text('Thời gian giữ ghế của bạn đã hết. Vui lòng quay lại và chọn ghế lại.'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE62C2C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
             onPressed: () {
               Navigator.of(context).pop();
             },
-            child: const Text('OK'),
+            child: const Text('Đồng ý'),
           ),
         ],
       ),
@@ -115,32 +127,43 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
   }
 
   void _navigateToHome() {
-    if (!mounted || _isNavigatingHome) {
+    if (!mounted || _isNavigatingAway) {
       return;
     }
-    _isNavigatingHome = true;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MoviesPage()),
-      (route) => false,
-    );
+    _isNavigatingAway = true;
+    Navigator.of(context).popUntil((route) {
+      return route.settings.name == MovieShowtimePage.routeName || route.settings.name == CinemaShowtimePage.routeName;
+    });
   }
 
   Future<void> _confirmCancelBooking() async {
-    if (!mounted || _isSubmitting || _isNavigatingHome) {
+    if (!mounted || _isSubmitting || _isNavigatingAway) {
       return;
     }
 
     final shouldCancel = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hủy đặt vé?'),
+        titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Color(0xFF374151), height: 1.35),
         content: const Text('Nếu thoát lúc này, ghế đang giữ sẽ được trả lại ngay. Bạn có chắc chắn muốn hủy không?'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF374151)),
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Tiếp tục đặt vé'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE62C2C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Hủy đặt vé'),
           ),
@@ -224,14 +247,26 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Tiếp tục thanh toán'),
+        titleTextStyle: const TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Color(0xFF374151), height: 1.35),
         content: const Text('Xác nhận combo để sang màn thanh toán?'),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF374151)),
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Hủy'),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE62C2C),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+            ),
             onPressed: () {
               Navigator.of(context).pop();
               _proceedToCheckout(selectedProducts);
@@ -267,12 +302,26 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       showDialog(
         context: context,
         barrierDismissible: false,
+        barrierColor: const Color(0x59000000),
         builder: (context) => AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           content: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(color: Color(0xFFE62C2C), strokeWidth: 2.5),
+              ),
               SizedBox(width: 12 * _uiScale(context)),
-              const Expanded(child: Text('Đang xác nhận đặt vé...')),
+              const Expanded(
+                child: Text(
+                  'Đang xác nhận đặt vé...',
+                  style: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w700),
+                ),
+              ),
             ],
           ),
         ),
@@ -363,7 +412,10 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       
       final errorMsg = _parseErrorMessageFromDio(e) ?? 'Không thể xác nhận đặt vé. Vui lòng thử lại.';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMsg)),
+        SnackBar(
+          backgroundColor: const Color(0xFF111827),
+          content: Text(errorMsg, style: const TextStyle(color: Colors.white)),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -376,7 +428,10 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       });
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi: $e')),
+        SnackBar(
+          backgroundColor: const Color(0xFF111827),
+          content: Text('Lỗi: $e', style: const TextStyle(color: Colors.white)),
+        ),
       );
     }
   }
@@ -609,19 +664,18 @@ class _ComboSelectionPageState extends State<ComboSelectionPage> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F7F7),
         body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(8 * scale),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12 * scale),
-                  border: Border.all(color: const Color(0xFF3A3A3A), width: 1),
-                ),
-                padding: EdgeInsets.all(12 * scale),
-                child: Row(
+            child: Padding(
+              padding: EdgeInsets.all(8 * scale),
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12 * scale),
+                    ),
+                    padding: EdgeInsets.all(12 * scale),
+                    child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(

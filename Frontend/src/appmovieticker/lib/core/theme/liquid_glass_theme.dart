@@ -8,6 +8,7 @@ class LiquidGlassTheme {
       colorScheme: ColorScheme.fromSeed(seedColor: seed, brightness: Brightness.light),
       useMaterial3: true,
       fontFamily: 'Roboto',
+      canvasColor: const Color(0xFFF8FBFF),
       scaffoldBackgroundColor: Colors.transparent,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.white.withValues(alpha: 0.22),
